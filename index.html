@@ -889,6 +889,44 @@ input:focus,select:focus,textarea:focus{outline:2px solid rgba(240,201,40,.42);o
 }
 @media print{.price-live-total{display:none!important}}
 </style>
+
+<style id="compact-estimate-v25">
+/* V25: compact phone estimate, no horizontal scrolling. Print/PDF keeps full table. */
+.estimate-phone{display:none}
+@media screen and (max-width:700px){
+  .print-sheet .table-wrap{display:none!important}
+  .estimate-phone{display:block!important;width:100%;max-width:100%;overflow:hidden;margin-top:8px}
+  .estimate-phone-head,.estimate-phone-row{
+    display:grid;grid-template-columns:24px minmax(0,1fr) 92px 58px 68px 34px;
+    gap:4px;align-items:center;width:100%;box-sizing:border-box
+  }
+  .estimate-phone-head{padding:7px 4px;color:#9fa6ad;font-size:10px;font-weight:800;border-bottom:1px solid #3a4046}
+  .estimate-phone-row{padding:9px 4px;border-bottom:1px solid #343a40;min-height:72px}
+  .estimate-phone-num{text-align:center;font-weight:800;font-size:12px}
+  .estimate-phone-work{min-width:0;line-height:1.18}
+  .estimate-phone-name{font-size:12px;font-weight:800;overflow-wrap:anywhere;word-break:normal}
+  .estimate-phone-cat{margin-top:3px;font-size:9.5px;line-height:1.15;color:#9fa6ad;overflow-wrap:anywhere}
+  .estimate-phone-qty{display:grid;grid-template-columns:26px 36px 26px;gap:2px;align-items:center;justify-content:center}
+  .estimate-phone-qty button{width:26px;height:30px;padding:0;border-radius:7px;border:1px solid #4b535a;background:#252a2f;color:#fff;font-size:18px;line-height:1}
+  .estimate-phone-qty input{width:36px;height:30px;box-sizing:border-box;padding:2px;text-align:center;border-radius:7px;font-size:12px;font-weight:800}
+  .estimate-phone-unit{text-align:center;font-size:9px;color:#9fa6ad;margin-top:2px;grid-column:1/-1}
+  .estimate-phone-price{font-size:11px;text-align:right;white-space:nowrap}
+  .estimate-phone-sum{font-size:12px;font-weight:900;text-align:right;white-space:nowrap}
+  .estimate-phone-del{width:30px;height:30px;padding:0;border-radius:8px;border:1px solid #6c3035;background:#4a2427;color:#fff;font-size:17px}
+  .print-sheet,.print-sheet *{max-width:100%;box-sizing:border-box}
+}
+@media screen and (max-width:390px){
+  .estimate-phone-head,.estimate-phone-row{grid-template-columns:20px minmax(0,1fr) 82px 52px 60px 30px;gap:2px}
+  .estimate-phone-qty{grid-template-columns:23px 32px 23px}
+  .estimate-phone-qty button{width:23px;height:28px}
+  .estimate-phone-qty input{width:32px;height:28px}
+  .estimate-phone-name{font-size:11px}.estimate-phone-cat{font-size:8.5px}
+  .estimate-phone-price{font-size:10px}.estimate-phone-sum{font-size:11px}
+  .estimate-phone-del{width:27px;height:28px}
+}
+@media print{.estimate-phone{display:none!important}.print-sheet .table-wrap{display:block!important}}
+</style>
+
 </head>
 <body>
 <div id="authOverlay" class="auth-overlay" style="display:none">
@@ -1028,7 +1066,7 @@ async function saveCloudState(force=false){
 const navItems=[["⌂","Главная"],["₽","Прайс"],["▦","Калькулятор"],["▤","Сметы"]];
 document.getElementById("nav").innerHTML=navItems.map(x=>{const page=x[1]==="Сметы"?"Сметы и заказы":x[1];return `<button onclick="go('${page}')" id="n-${page}"><span class="nav-icon">${x[0]}</span><span class="nav-label">${x[1]}</span></button>`}).join("");
 
-const APP_VERSION="2026.09.30.24";
+const APP_VERSION="2026.09.30.25";
 const VERSION_URL="./version.json";
 let updateCheckBusy=false;
 let updateLatest="";
@@ -1220,7 +1258,7 @@ function orders(c){
     ${f.comment?`<div class="print-comment"><span>Комментарий</span><b>${esc(f.comment)}</b></div>`:''}
   </div>
   <h3 class="print-work-title">Выполненные работы</h3>
-  ${estimate.length?estimateTable():`<p class="muted">Пока ничего не добавлено. Откройте «Прайс» и добавьте работы.</p>`}
+  ${estimate.length?(estimatePhoneTable()+estimateTable()):`<p class="muted">Пока ничего не добавлено. Откройте «Прайс» и добавьте работы.</p>`}
   <div class="summary print-summary">
     <div><span>Стоимость работ:</span><b>${money(sub)} ₽</b></div>
     <div><span>Скидка ${d.pct}%:</span><b>− ${money(d.amount)} ₽</b></div>
@@ -1231,6 +1269,19 @@ function orders(c){
 </div>`;
 }
 function esc(v){return String(v||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
+function estimatePhoneTable(){
+ return `<div class="estimate-phone">
+   <div class="estimate-phone-head"><div>№</div><div>Работа</div><div style="text-align:center">Кол-во</div><div style="text-align:right">Цена</div><div style="text-align:right">Сумма</div><div></div></div>
+   ${estimate.map((x,i)=>{const q=Number(x.qty||1),sum=q*Number(x.price||0);return `<div class="estimate-phone-row">
+     <div class="estimate-phone-num">${i+1}</div>
+     <div class="estimate-phone-work"><div class="estimate-phone-name">${esc(x.name)}</div><div class="estimate-phone-cat">${esc(x.category||"")}</div></div>
+     <div class="estimate-phone-qty"><button type="button" onclick="changeEstimateQty(${i},-1)">−</button><input type="number" min="1" step="1" inputmode="numeric" value="${q}" onchange="setEstimateQty(${i},this.value)" onfocus="this.select()"><button type="button" onclick="changeEstimateQty(${i},1)">+</button><div class="estimate-phone-unit">${esc(x.unit)}</div></div>
+     <div class="estimate-phone-price">${money(x.price)} ₽</div>
+     <div class="estimate-phone-sum">${money(sum)} ₽</div>
+     <button type="button" class="estimate-phone-del" onclick="removeEstimate(${i})" aria-label="Удалить">×</button>
+   </div>`}).join("")}
+ </div>`;
+}
 function estimateTable(){return `<div class="table-wrap"><table class="estimate-table"><thead><tr><th>№</th><th>Раздел</th><th>Позиция</th><th>Ед.</th><th>Количество</th><th>Цена за 1</th><th>Сумма</th><th class="no-print">Действие</th></tr></thead><tbody>${estimate.map((x,i)=>{const qty=Number(x.qty||1),sum=qty*Number(x.price||0);return `<tr><td>${i+1}</td><td>${esc(x.category||"")}</td><td>${esc(x.name)}</td><td>${esc(x.unit)}</td><td><div class="qty-control no-print"><button onclick="changeEstimateQty(${i},-1)">−</button><input type="number" min="1" value="${qty}" onchange="setEstimateQty(${i},this.value)"><button onclick="changeEstimateQty(${i},1)">+</button></div><span class="print-only">${qty}</span></td><td>${money(x.price)} ₽</td><td>${money(sum)} ₽</td><td class="no-print"><button class="delete-mini" onclick="removeEstimate(${i})">×</button></td></tr>`}).join("")}</tbody></table></div>`}
 function changeEstimateQty(i,d){estimate[i].qty=Math.max(1,Number(estimate[i].qty||1)+d);saveEstimate();render()}
 function setEstimateQty(i,v){estimate[i].qty=Math.max(1,Number(v)||1);saveEstimate();render()}
