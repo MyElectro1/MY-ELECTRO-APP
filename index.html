@@ -587,7 +587,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid rgba(240,201,40,.42);o
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="MY ELECTRO">
-<meta name="theme-color" content="#111111">
+<meta name="theme-color" content="#151719">
 
 <style id="smart-print-pagination-v8">
 /* MY ELECTRO v8 — smart A4 pagination:
@@ -729,6 +729,47 @@ input:focus,select:focus,textarea:focus{outline:2px solid rgba(240,201,40,.42);o
   .actions{position:relative!important;top:auto!important;z-index:auto!important}
 }
 </style>
+
+<style id="mobile-bottom-edge-v16">
+/* V16: one authoritative mobile viewport/nav geometry.
+   Keeps Android's dedicated scroll container and makes the iPhone safe-area
+   part of the bottom navigation instead of a separate black strip. */
+@media screen and (max-width:700px){
+  html,body{
+    background:#151719!important;
+  }
+  .app{
+    background:var(--bg)!important;
+    height:100%!important;
+    min-height:100%!important;
+  }
+  .side{
+    left:0!important;right:0!important;bottom:0!important;top:auto!important;
+    width:100%!important;
+    height:calc(66px + env(safe-area-inset-bottom))!important;
+    min-height:calc(66px + env(safe-area-inset-bottom))!important;
+    padding:4px 7px env(safe-area-inset-bottom)!important;
+    margin:0!important;
+    background:#151719!important;
+    border-top:1px solid #343a40!important;
+  }
+  .nav{
+    height:66px!important;
+    min-height:66px!important;
+    align-items:center!important;
+  }
+  .nav button{
+    height:58px!important;
+    min-height:58px!important;
+    margin:0!important;
+  }
+  .main{
+    bottom:calc(66px + env(safe-area-inset-bottom))!important;
+    padding-bottom:8px!important;
+  }
+  #content{padding-bottom:0!important;margin-bottom:0!important}
+}
+</style>
 </head>
 <body>
 <div id="authOverlay" class="auth-overlay" style="display:none">
@@ -867,7 +908,7 @@ async function saveCloudState(force=false){
 const navItems=[["⌂","Главная"],["₽","Прайс"],["▦","Калькулятор"],["▤","Сметы"]];
 document.getElementById("nav").innerHTML=navItems.map(x=>{const page=x[1]==="Сметы"?"Сметы и заказы":x[1];return `<button onclick="go('${page}')" id="n-${page}"><span class="nav-icon">${x[0]}</span><span class="nav-label">${x[1]}</span></button>`}).join("");
 
-const APP_VERSION="2026.09.30.15";
+const APP_VERSION="2026.09.30.16";
 const VERSION_URL="./version.json";
 const UPDATE_ACK_KEY="my_electro_update_ack_v3";
 let updateCheckBusy=false;
