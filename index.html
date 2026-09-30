@@ -656,14 +656,67 @@ input:focus,select:focus,textarea:focus{outline:2px solid rgba(240,201,40,.42);o
 }
 </style>
 
-<style id="android-scroll-fix-v11">
-/* Android/Chrome vertical scrolling fix. Additive only: layout/features unchanged. */
+<style id="android-scroll-fix-v12">
+/* Android/PWA stable scrolling:
+   the app content itself is the scroll container; body never owns the scroll. */
 @media screen and (max-width:700px){
-  html{height:auto!important;min-height:100%!important;overflow-x:hidden!important;overflow-y:auto!important;touch-action:pan-y pinch-zoom!important;-webkit-overflow-scrolling:touch}
-  body{height:auto!important;min-height:100dvh!important;overflow-x:hidden!important;overflow-y:auto!important;touch-action:pan-y pinch-zoom!important;-webkit-overflow-scrolling:touch;overscroll-behavior-y:auto}
-  .app,.main,#content{height:auto!important;min-height:0!important;max-height:none!important;overflow:visible!important;touch-action:pan-y!important}
-  .card,.hero,.catgrid,.price-list,.manager-wrap,.archive-list{max-height:none!important}
-  .side{touch-action:manipulation!important}
+  html,body{
+    width:100%!important;
+    height:100%!important;
+    min-height:100%!important;
+    margin:0!important;
+    overflow:hidden!important;
+    overscroll-behavior:none!important;
+  }
+  body{
+    padding-bottom:0!important;
+    touch-action:auto!important;
+  }
+  .app{
+    display:block!important;
+    position:fixed!important;
+    inset:0!important;
+    width:100%!important;
+    height:100dvh!important;
+    min-height:0!important;
+    overflow:hidden!important;
+  }
+  .main{
+    position:absolute!important;
+    left:0!important;
+    right:0!important;
+    top:0!important;
+    bottom:calc(78px + env(safe-area-inset-bottom))!important;
+    margin:0!important;
+    width:auto!important;
+    height:auto!important;
+    min-height:0!important;
+    max-height:none!important;
+    overflow-x:hidden!important;
+    overflow-y:scroll!important;
+    -webkit-overflow-scrolling:touch!important;
+    overscroll-behavior-y:contain!important;
+    touch-action:pan-y pinch-zoom!important;
+    padding-bottom:28px!important;
+  }
+  #content{
+    height:auto!important;
+    min-height:calc(100% + 1px)!important;
+    max-height:none!important;
+    overflow:visible!important;
+    touch-action:pan-y!important;
+  }
+  .card,.hero,.catgrid,.price-list,.manager-wrap,.archive-list{
+    max-height:none!important;
+  }
+  .side{
+    position:fixed!important;
+    left:0!important;
+    right:0!important;
+    bottom:0!important;
+    z-index:1000!important;
+    touch-action:manipulation!important;
+  }
   input,textarea,select,button{touch-action:manipulation}
 }
 </style>
@@ -805,7 +858,7 @@ async function saveCloudState(force=false){
 const navItems=[["⌂","Главная"],["₽","Прайс"],["▦","Калькулятор"],["▤","Сметы"]];
 document.getElementById("nav").innerHTML=navItems.map(x=>{const page=x[1]==="Сметы"?"Сметы и заказы":x[1];return `<button onclick="go('${page}')" id="n-${page}"><span class="nav-icon">${x[0]}</span><span class="nav-label">${x[1]}</span></button>`}).join("");
 
-const APP_VERSION="2026.09.30.11";
+const APP_VERSION="2026.09.30.12";
 const VERSION_URL="./version.json";
 const UPDATE_ACK_KEY="my_electro_update_ack_v3";
 let updateCheckBusy=false;
