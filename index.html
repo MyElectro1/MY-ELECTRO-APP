@@ -666,7 +666,7 @@ async function saveCloudState(force=false){
 const navItems=[["⌂","Главная"],["₽","Прайс"],["▦","Калькулятор"],["▤","Сметы"]];
 document.getElementById("nav").innerHTML=navItems.map(x=>{const page=x[1]==="Сметы"?"Сметы и заказы":x[1];return `<button onclick="go('${page}')" id="n-${page}"><span class="nav-icon">${x[0]}</span><span class="nav-label">${x[1]}</span></button>`}).join("");
 
-const APP_VERSION="2026.09.30.3";
+const APP_VERSION="2026.09.30.4";
 const VERSION_URL="./version.json";
 let updateCheckBusy=false;
 
@@ -884,10 +884,24 @@ function saveOrder(){
  localStorage.setItem(ukey("orders"),JSON.stringify(ordersList));scheduleCloudSave();
  const wasEditing=!!editingOrderId;
  editingOrderId=null;
- alert(wasEditing?"Изменения заказа сохранены":"Заказ сохранён в архиве");
- go("Архив заказов");
+ resetForNextOrder();
+ alert(wasEditing?"Изменения заказа сохранены. Смета готова для следующего заказа":"Заказ сохранён в архиве. Смета готова для следующего заказа");
+ go("Сметы и заказы");
 }
-function printOrder(){saveOrderForm();window.print()}
+function resetForNextOrder(){
+ estimate=[];
+ orderForm={client:"",phone:"",address:"",date:today(),comment:"",discount:"0"};
+ editingOrderId=null;
+ localStorage.setItem(ukey("estimate"),JSON.stringify(estimate));
+ localStorage.setItem(ukey("order_form"),JSON.stringify(orderForm));
+ scheduleCloudSave();
+}
+function printOrder(){
+ saveOrderForm();
+ window.print();
+ resetForNextOrder();
+ render();
+}
 function archive(c){c.innerHTML=`<div class="card"><h3>🗂️ Архив заказов</h3>${ordersList.length?ordersList.map((o,i)=>`<div class="archive-item"><div><b>${esc(o.client||"Без имени")}</b><div class="muted">${esc(o.date)} · ${esc(o.phone||"Телефон не указан")}</div><div class="muted">${esc(o.address||"Адрес не указан")}</div></div><div class="archive-right"><b>${money(o.total)} ₽</b><button class="btn secondary no-print" onclick="viewOrder(${i})">✏️ Редактировать</button><button class="btn danger no-print" onclick="deleteOrder(${i})">🗑️ Удалить</button></div></div>`).join(""):`<p class="muted">Архив пока пуст. Сохранённые заказы появятся здесь.</p>`}</div>`}
 function viewOrder(i){
  const o=ordersList[i];
