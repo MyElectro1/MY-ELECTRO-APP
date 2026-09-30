@@ -862,6 +862,13 @@ input:focus,select:focus,textarea:focus{outline:2px solid rgba(240,201,40,.42);o
   }
 }
 </style>
+
+<style id="pdf-position-only-v21">
+@media print{
+  .estimate-table th:nth-child(2),
+  .estimate-table td:nth-child(2){display:none!important;}
+}
+</style>
 </head>
 <body>
 <div id="authOverlay" class="auth-overlay" style="display:none">
@@ -918,6 +925,7 @@ function saveOrderForm(){
  const gv=(id,fallback="")=>{const e=document.getElementById(id);return e?e.value:fallback};
  orderForm={
    client:gv("estimateClient",orderForm.client||""),
+   master:gv("estimateMaster",orderForm.master||currentUser||""),
    phone:gv("estimatePhone",orderForm.phone||""),
    address:gv("estimateAddress",orderForm.address||""),
    date:gv("estimateDate",orderForm.date||today()),
@@ -1000,7 +1008,7 @@ async function saveCloudState(force=false){
 const navItems=[["⌂","Главная"],["₽","Прайс"],["▦","Калькулятор"],["▤","Сметы"]];
 document.getElementById("nav").innerHTML=navItems.map(x=>{const page=x[1]==="Сметы"?"Сметы и заказы":x[1];return `<button onclick="go('${page}')" id="n-${page}"><span class="nav-icon">${x[0]}</span><span class="nav-label">${x[1]}</span></button>`}).join("");
 
-const APP_VERSION="2026.09.30.19";
+const APP_VERSION="2026.09.30.21";
 const VERSION_URL="./version.json";
 let updateCheckBusy=false;
 let updateLatest="";
@@ -1159,13 +1167,14 @@ function del(i){estimate.splice(i,1);saveEstimate();render()}
 function orders(c){
   const sub=estimate.reduce((s,x)=>s+Number(x.qty||1)*Number(x.price||0),0);
   const d=calcDiscount(sub);
-  const f={client:orderForm.client||"",phone:orderForm.phone||"",address:orderForm.address||"",date:orderForm.date||today(),comment:orderForm.comment||"",discount:orderForm.discount||"0"};
+  const f={client:orderForm.client||"",master:orderForm.master||currentUser||"",phone:orderForm.phone||"",address:orderForm.address||"",date:orderForm.date||today(),comment:orderForm.comment||"",discount:orderForm.discount||"0"};
   orderForm=f; localStorage.setItem("murad_order_form",JSON.stringify(f));
   c.innerHTML=`<div class="card print-sheet">
   <div class="estimate-client-edit no-print">
     <h3>👤 Данные клиента в смете</h3>
     <div class="estimate-client-fields">
       <label>Клиент<input id="estimateClient" value="${esc(f.client)}" placeholder="Имя клиента" oninput="syncEstimateClient('client',this.value)"></label>
+      <label>Мастер<input id="estimateMaster" value="${esc(f.master)}" placeholder="Имя мастера" oninput="syncEstimateClient('master',this.value)"></label>
       <label>Телефон<input id="estimatePhone" value="${esc(f.phone)}" placeholder="+7..." inputmode="tel" oninput="syncEstimateClient('phone',this.value)"></label>
       <label>Адрес<input id="estimateAddress" value="${esc(f.address)}" placeholder="Адрес объекта" oninput="syncEstimateClient('address',this.value)"></label>
       <label>Дата<input id="estimateDate" type="date" value="${f.date}" onchange="syncEstimateClient('date',this.value)"></label>
@@ -1177,6 +1186,7 @@ function orders(c){
     <div class="print-doc-title">СМЕТА</div>
     <div class="print-client-grid">
       <div><span>Клиент</span><b id="sheetClient">${esc(f.client||"—")}</b></div>
+      <div><span>Мастер</span><b id="sheetMaster">${esc(f.master||"—")}</b></div>
       <div><span>Телефон</span><b id="sheetPhone">${esc(f.phone||"—")}</b></div>
       <div><span>Адрес</span><b id="sheetAddress">${esc(f.address||"—")}</b></div>
       <div><span>Дата</span><b id="sheetDate">${esc(f.date||today())}</b></div>
@@ -1216,11 +1226,11 @@ function syncEstimateClient(field,value){
   orderForm[field]=value;
   localStorage.setItem(ukey("order_form"),JSON.stringify(orderForm));
 
-  const formMap={client:"client",phone:"phone",address:"address",date:"date"};
+  const formMap={client:"client",master:"estimateMaster",phone:"phone",address:"address",date:"date"};
   const other=document.getElementById(formMap[field]);
   if(other&&other.value!==value)other.value=value;
 
-  const sheetMap={client:"sheetClient",phone:"sheetPhone",address:"sheetAddress",date:"sheetDate"};
+  const sheetMap={client:"sheetClient",master:"sheetMaster",phone:"sheetPhone",address:"sheetAddress",date:"sheetDate"};
   const shown=document.getElementById(sheetMap[field]);
   if(shown)shown.textContent=(value&&String(value).trim())?value:"—";
 }
@@ -1236,6 +1246,7 @@ function saveOrder(options={}){
  const order={
    id:editingOrderId||Date.now(),
    client:orderForm.client,
+   master:orderForm.master||currentUser||"",
    phone:orderForm.phone,
    address:orderForm.address,
    date:orderForm.date||today(),
@@ -1260,7 +1271,7 @@ function saveOrder(options={}){
 }
 function resetForNextOrder(){
  estimate=[];
- orderForm={client:"",phone:"",address:"",date:today(),comment:"",discount:"0"};
+ orderForm={client:"",master:currentUser||"",phone:"",address:"",date:today(),comment:"",discount:"0"};
  editingOrderId=null;
  localStorage.setItem(ukey("estimate"),JSON.stringify(estimate));
  localStorage.setItem(ukey("order_form"),JSON.stringify(orderForm));
@@ -1269,6 +1280,7 @@ function resetForNextOrder(){
 function estimateArchiveSignature(){
  return JSON.stringify({
    client:orderForm.client||"",
+   master:orderForm.master||currentUser||"",
    phone:orderForm.phone||"",
    address:orderForm.address||"",
    date:orderForm.date||today(),
@@ -1294,7 +1306,7 @@ function viewOrder(i){
  const o=ordersList[i];
  editingOrderId=o.id;
  estimate=JSON.parse(JSON.stringify(o.items||[]));
- orderForm={client:o.client||"",phone:o.phone||"",address:o.address||"",date:o.date||today(),comment:o.comment||"",discount:o.discount||0};
+ orderForm={client:o.client||"",master:o.master||currentUser||"",phone:o.phone||"",address:o.address||"",date:o.date||today(),comment:o.comment||"",discount:o.discount||0};
  localStorage.setItem(ukey("estimate"),JSON.stringify(estimate));
  localStorage.setItem(ukey("order_form"),JSON.stringify(orderForm));scheduleCloudSave();
  go("Сметы и заказы");
@@ -1387,7 +1399,7 @@ function clearEstimateWithConfirm(){
  if(!confirm("Удалить текущую смету? Сохранённые заказы в архиве останутся."))return;
  estimate=[];
  editingOrderId=null;
- orderForm={client:"",phone:"",address:"",date:today(),comment:"",discount:"0"};
+ orderForm={client:"",master:currentUser||"",phone:"",address:"",date:today(),comment:"",discount:"0"};
  saveEstimate();
  localStorage.setItem(ukey("order_form"),JSON.stringify(orderForm));
  saveCloudState();
