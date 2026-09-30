@@ -863,11 +863,31 @@ input:focus,select:focus,textarea:focus{outline:2px solid rgba(240,201,40,.42);o
 }
 </style>
 
-<style id="pdf-position-only-v21">
-@media print{
-  .estimate-table th:nth-child(2),
-  .estimate-table td:nth-child(2){display:none!important;}
+
+<style id="price-floating-total-v23">
+/* V23: compact live estimate total in Price. Kept above the proven V19 bottom navigation. */
+.price-live-total{
+  position:fixed;right:14px;bottom:82px;z-index:850;
+  display:flex;align-items:center;gap:9px;
+  max-width:calc(100vw - 28px);padding:9px 12px;
+  border:1px solid rgba(245,189,25,.55);border-radius:14px;
+  background:rgba(24,27,30,.94);box-shadow:0 8px 24px rgba(0,0,0,.32);
+  color:#fff;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent;
 }
+.price-live-total .plt-label{font-size:11px;color:#c9d0d5;line-height:1}
+.price-live-total .plt-sum{font-size:17px;font-weight:900;line-height:1.15;white-space:nowrap;color:#f5bd19}
+.price-live-total .plt-count{font-size:10px;color:#aeb5bb;white-space:nowrap}
+@media screen and (max-width:700px){
+  .price-live-total{right:10px;bottom:calc(70px + env(safe-area-inset-bottom));padding:8px 10px;border-radius:12px}
+  .price-live-total .plt-sum{font-size:16px}
+}
+@supports (-webkit-touch-callout: none){
+  @media screen and (max-width:700px){
+    .price-live-total{bottom:calc(70px + env(safe-area-inset-bottom))!important}
+  }
+}
+@media print{.price-live-total{display:none!important}}
 </style>
 </head>
 <body>
@@ -1008,7 +1028,7 @@ async function saveCloudState(force=false){
 const navItems=[["⌂","Главная"],["₽","Прайс"],["▦","Калькулятор"],["▤","Сметы"]];
 document.getElementById("nav").innerHTML=navItems.map(x=>{const page=x[1]==="Сметы"?"Сметы и заказы":x[1];return `<button onclick="go('${page}')" id="n-${page}"><span class="nav-icon">${x[0]}</span><span class="nav-label">${x[1]}</span></button>`}).join("");
 
-const APP_VERSION="2026.09.30.21";
+const APP_VERSION="2026.09.30.23";
 const VERSION_URL="./version.json";
 let updateCheckBusy=false;
 let updateLatest="";
@@ -1135,10 +1155,16 @@ function home(c){
    <button class="home-repeat no-print" onclick="go('Архив заказов')">↻ Вернуться к прошлым расчётам</button>
  </div>`;
 }
+function estimateLiveTotal(){return estimate.reduce((s,x)=>s+Number(x.qty||0)*Number(x.price||0),0)}
+function priceLiveTotal(){
+ const total=estimateLiveTotal();
+ const count=estimate.reduce((s,x)=>s+Number(x.qty||0),0);
+ return `<div class="price-live-total no-print" onclick="go('Сметы')" title="Открыть смету"><div><div class="plt-label">Итого в смете</div><div class="plt-sum">${money(total)} ₽</div></div><div class="plt-count">${count} шт.</div></div>`;
+}
 function pricePage(c){
  if(currentCat!==null)return items(c);
  c.innerHTML=`<div class="actions no-print"><input class="search" style="max-width:500px" placeholder="Поиск по разделам..." oninput="filterCats(this.value)"></div>
- <div class="catgrid" id="cats">${price.map((x,i)=>`<div class="cat ${x.name===CUSTOM_SECTION?'custom-work':''}" data-name="${esc(x.name).toLowerCase()}" onclick="openCat(${i})"><b>${x.name===CUSTOM_SECTION?'✨ ':''}${i+1}. ${esc(x.name)}</b><span class="muted">${x.items.length} позиций${x.name===CUSTOM_SECTION?' · добавить свою услугу':''}</span></div>`).join("")}</div>`;
+ <div class="catgrid" id="cats">${price.map((x,i)=>`<div class="cat ${x.name===CUSTOM_SECTION?'custom-work':''}" data-name="${esc(x.name).toLowerCase()}" onclick="openCat(${i})"><b>${x.name===CUSTOM_SECTION?'✨ ':''}${i+1}. ${esc(x.name)}</b><span class="muted">${x.items.length} позиций${x.name===CUSTOM_SECTION?' · добавить свою услугу':''}</span></div>`).join("")}</div> ${priceLiveTotal()}`;
 }
 function filterCats(v){document.querySelectorAll(".cat").forEach(e=>e.style.display=e.dataset.name.includes(v.toLowerCase())?"block":"none")}
 function openCat(i){currentCat=i;render()}
@@ -1148,7 +1174,7 @@ function items(c){
  c.innerHTML=`<div class="actions no-print"><button class="btn secondary" onclick="currentCat=null;render()">← Все разделы</button><input class="search" style="max-width:360px" placeholder="Поиск по услугам..." oninput="filterItems(this.value)"></div>
  ${custom?`<div class="custom-add no-print"><h3>✨ Добавить свою работу</h3><div class="custom-fields"><label>Название работы<input id="customName" placeholder="Например: монтаж датчика"></label><label>Ед. измерения<input id="customUnit" value="шт" placeholder="шт"></label><label>Цена, ₽<input id="customPrice" type="number" min="0" inputmode="decimal" placeholder="0"></label><button class="btn custom-save" onclick="addCustomWork()">＋ Добавить работу</button></div></div>`:''}
  <div class="card" style="margin-top:14px"><div class="section-head"><div class="section-title ${custom?'custom-work-head':''}">${custom?'✨ ':''}${currentCat+1}. ${esc(cat.name)}</div><span class="muted">${cat.items.length} позиций</span></div>
- <div id="items">${cat.items.length?cat.items.map((x,i)=>`<div class="price-item" data-name="${esc(x[0]).toLowerCase()}"><div><b>${esc(x[0])}</b></div><div>${esc(x[1])}</div><div>${money(x[2])} ₽</div><div class="item-actions"><div class="qty-stepper"><button onclick="changePriceQty(${currentCat},${i},-1)" aria-label="Уменьшить">−</button><input class="qnum qty-direct" type="number" min="0" step="1" inputmode="numeric" value="${getPriceQty(currentCat,i)}" onchange="setPriceQty(${currentCat},${i},this.value)" onfocus="this.select()" aria-label="Количество"><button class="plus" onclick="changePriceQty(${currentCat},${i},1)" aria-label="Увеличить">+</button></div></div></div>`).join(""):`<div class="empty">Добавь первую свою работу выше.</div>`}</div></div>`;
+ <div id="items">${cat.items.length?cat.items.map((x,i)=>`<div class="price-item" data-name="${esc(x[0]).toLowerCase()}"><div><b>${esc(x[0])}</b></div><div>${esc(x[1])}</div><div>${money(x[2])} ₽</div><div class="item-actions"><div class="qty-stepper"><button onclick="changePriceQty(${currentCat},${i},-1)" aria-label="Уменьшить">−</button><input class="qnum qty-direct" type="number" min="0" step="1" inputmode="numeric" value="${getPriceQty(currentCat,i)}" onchange="setPriceQty(${currentCat},${i},this.value)" onfocus="this.select()" aria-label="Количество"><button class="plus" onclick="changePriceQty(${currentCat},${i},1)" aria-label="Увеличить">+</button></div></div></div>`).join(""):`<div class="empty">Добавь первую свою работу выше.</div>`}</div></div> ${priceLiveTotal()}`;
 }
 function filterItems(v){document.querySelectorAll("#items .price-item").forEach(e=>e.style.display=e.dataset.name.includes(v.toLowerCase())?"grid":"none")}
 function findEstimateItem(ci,ii){const x=price[ci].items[ii];return estimate.find(e=>e.name===x[0]&&e.unit===x[1]&&Number(e.price)===Number(x[2]));}
