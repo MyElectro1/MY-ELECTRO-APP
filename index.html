@@ -1028,7 +1028,7 @@ async function saveCloudState(force=false){
 const navItems=[["⌂","Главная"],["₽","Прайс"],["▦","Калькулятор"],["▤","Сметы"]];
 document.getElementById("nav").innerHTML=navItems.map(x=>{const page=x[1]==="Сметы"?"Сметы и заказы":x[1];return `<button onclick="go('${page}')" id="n-${page}"><span class="nav-icon">${x[0]}</span><span class="nav-label">${x[1]}</span></button>`}).join("");
 
-const APP_VERSION="2026.09.30.23";
+const APP_VERSION="2026.09.30.24";
 const VERSION_URL="./version.json";
 let updateCheckBusy=false;
 let updateLatest="";
@@ -1159,7 +1159,7 @@ function estimateLiveTotal(){return estimate.reduce((s,x)=>s+Number(x.qty||0)*Nu
 function priceLiveTotal(){
  const total=estimateLiveTotal();
  const count=estimate.reduce((s,x)=>s+Number(x.qty||0),0);
- return `<div class="price-live-total no-print" onclick="go('Сметы')" title="Открыть смету"><div><div class="plt-label">Итого в смете</div><div class="plt-sum">${money(total)} ₽</div></div><div class="plt-count">${count} шт.</div></div>`;
+ return `<div class="price-live-total no-print" onclick="go('Сметы и заказы')" title="Открыть смету"><div><div class="plt-label">Итого в смете</div><div class="plt-sum">${money(total)} ₽</div></div><div class="plt-count">${count} шт.</div></div>`;
 }
 function pricePage(c){
  if(currentCat!==null)return items(c);
