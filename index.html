@@ -832,6 +832,36 @@ input:focus,select:focus,textarea:focus{outline:2px solid rgba(240,201,40,.42);o
   #content{padding-bottom:0!important;margin-bottom:0!important}
 }
 </style>
+
+<style id="ios-bottom-edge-v19">
+/* V19: iOS-only viewport correction. Android keeps the proven V12/V18 geometry unchanged. */
+@supports (-webkit-touch-callout: none){
+  @media screen and (max-width:700px){
+    html,body{height:100lvh!important;min-height:100lvh!important;}
+    .app{
+      position:fixed!important;inset:0!important;
+      width:100vw!important;height:100lvh!important;min-height:100lvh!important;
+      overflow:hidden!important;
+    }
+    .side{
+      position:absolute!important;
+      left:0!important;right:0!important;bottom:0!important;top:auto!important;
+      width:100%!important;
+      height:calc(62px + env(safe-area-inset-bottom))!important;
+      min-height:calc(62px + env(safe-area-inset-bottom))!important;
+      padding:0 7px env(safe-area-inset-bottom)!important;
+      margin:0!important;
+    }
+    .nav{height:62px!important;min-height:62px!important;align-items:center!important;}
+    .nav button{height:54px!important;min-height:54px!important;padding:2px 1px!important;}
+    .main{
+      position:absolute!important;top:0!important;left:0!important;right:0!important;
+      bottom:calc(62px + env(safe-area-inset-bottom))!important;
+      padding-bottom:4px!important;
+    }
+  }
+}
+</style>
 </head>
 <body>
 <div id="authOverlay" class="auth-overlay" style="display:none">
@@ -970,7 +1000,7 @@ async function saveCloudState(force=false){
 const navItems=[["⌂","Главная"],["₽","Прайс"],["▦","Калькулятор"],["▤","Сметы"]];
 document.getElementById("nav").innerHTML=navItems.map(x=>{const page=x[1]==="Сметы"?"Сметы и заказы":x[1];return `<button onclick="go('${page}')" id="n-${page}"><span class="nav-icon">${x[0]}</span><span class="nav-label">${x[1]}</span></button>`}).join("");
 
-const APP_VERSION="2026.09.30.18";
+const APP_VERSION="2026.09.30.19";
 const VERSION_URL="./version.json";
 let updateCheckBusy=false;
 let updateLatest="";
