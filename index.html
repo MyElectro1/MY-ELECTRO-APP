@@ -927,6 +927,16 @@ input:focus,select:focus,textarea:focus{outline:2px solid rgba(240,201,40,.42);o
 @media print{.estimate-phone{display:none!important}.print-sheet .table-wrap{display:block!important}}
 </style>
 
+
+<style id="ios-print-button-v26">
+/* V26: iPhone print button tap reliability; no layout changes to V19/V25 navigation. */
+@supports (-webkit-touch-callout: none){
+  @media screen and (max-width:700px){
+    .print-sheet>.actions.no-print{position:relative!important;z-index:20!important;padding-bottom:14px!important;pointer-events:auto!important}
+    .print-sheet>.actions.no-print .btn{position:relative!important;z-index:21!important;min-height:48px!important;touch-action:manipulation!important;-webkit-tap-highlight-color:rgba(240,201,40,.18);pointer-events:auto!important}
+  }
+}
+</style>
 </head>
 <body>
 <div id="authOverlay" class="auth-overlay" style="display:none">
@@ -1066,7 +1076,7 @@ async function saveCloudState(force=false){
 const navItems=[["⌂","Главная"],["₽","Прайс"],["▦","Калькулятор"],["▤","Сметы"]];
 document.getElementById("nav").innerHTML=navItems.map(x=>{const page=x[1]==="Сметы"?"Сметы и заказы":x[1];return `<button onclick="go('${page}')" id="n-${page}"><span class="nav-icon">${x[0]}</span><span class="nav-label">${x[1]}</span></button>`}).join("");
 
-const APP_VERSION="2026.09.30.25";
+const APP_VERSION="2026.09.30.26";
 const VERSION_URL="./version.json";
 let updateCheckBusy=false;
 let updateLatest="";
@@ -1265,7 +1275,7 @@ function orders(c){
     <div class="print-grand-total"><span>К оплате:</span><strong>${money(d.total)} ₽</strong></div>
   </div>
   <div class="print-thanks"><div class="print-thanks-bolt">⚡</div><b>Спасибо за доверие!</b><span>MY ELECTRO</span></div>
-  <div class="actions no-print"><button class="btn green" onclick="saveOrder()">${editingOrderId?"💾 Сохранить изменения":"💾 Сохранить заказ"}</button><button class="btn secondary" onclick="printOrder()">Печать / PDF</button><button class="btn danger" onclick="clearEstimateWithConfirm()">🗑 Удалить смету</button></div>
+  <div class="actions no-print"><button class="btn green" onclick="saveOrder()">${editingOrderId?"💾 Сохранить изменения":"💾 Сохранить заказ"}</button><button class="btn secondary" onclick="return printOrder(event)">Печать / PDF</button><button class="btn danger" onclick="clearEstimateWithConfirm()">🗑 Удалить смету</button></div>
 </div>`;
 }
 function esc(v){return String(v||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
@@ -1374,9 +1384,21 @@ function saveEstimateToArchiveBeforePrint(){
  const saved=saveOrder({silent:true});
  if(saved)sessionStorage.setItem("my_electro_last_print_archive_sig",sig);
 }
-function printOrder(){
+function printOrder(ev){
+ // V26: keep the print call inside the original tap/click gesture for iOS Safari/PWA.
+ if(ev){
+   ev.preventDefault();
+   ev.stopPropagation();
+ }
  saveEstimateToArchiveBeforePrint();
- window.print();
+ try{ if(document.activeElement && document.activeElement.blur) document.activeElement.blur(); }catch(e){}
+ try{
+   window.print();
+ }catch(err){
+   // Fallback for rare WebKit builds where the first print invocation throws.
+   requestAnimationFrame(()=>{ try{ window.print(); }catch(e){} });
+ }
+ return false;
 }
 function archive(c){c.innerHTML=`<div class="card"><h3>🗂️ Архив заказов</h3>${ordersList.length?ordersList.map((o,i)=>`<div class="archive-item"><div><b>${esc(o.client||"Без имени")}</b><div class="muted">${esc(o.date)} · ${esc(o.phone||"Телефон не указан")}</div><div class="muted">${esc(o.address||"Адрес не указан")}</div></div><div class="archive-right"><b>${money(o.total)} ₽</b><button class="btn secondary no-print" onclick="viewOrder(${i})">✏️ Редактировать</button><button class="btn danger no-print" onclick="deleteOrder(${i})">🗑️ Удалить</button></div></div>`).join(""):`<p class="muted">Архив пока пуст. Сохранённые заказы появятся здесь.</p>`}</div>`}
 function viewOrder(i){
