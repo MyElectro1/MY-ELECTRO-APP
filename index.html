@@ -970,9 +970,8 @@ async function saveCloudState(force=false){
 const navItems=[["⌂","Главная"],["₽","Прайс"],["▦","Калькулятор"],["▤","Сметы"]];
 document.getElementById("nav").innerHTML=navItems.map(x=>{const page=x[1]==="Сметы"?"Сметы и заказы":x[1];return `<button onclick="go('${page}')" id="n-${page}"><span class="nav-icon">${x[0]}</span><span class="nav-label">${x[1]}</span></button>`}).join("");
 
-const APP_VERSION="2026.09.30.17";
+const APP_VERSION="2026.09.30.18";
 const VERSION_URL="./version.json";
-const UPDATE_ACK_KEY="my_electro_update_ack_v3";
 let updateCheckBusy=false;
 let updateLatest="";
 
@@ -983,8 +982,6 @@ function hideUpdateBanner(){
 
 function showUpdateBanner(latestVersion){
  if(!latestVersion || latestVersion===APP_VERSION)return;
- // Если пользователь уже нажимал «Обновить» именно для этой версии, второй раз её не показываем.
- if(localStorage.getItem(UPDATE_ACK_KEY)===latestVersion)return;
  const b=document.getElementById("updateBanner");
  if(!b)return;
  updateLatest=latestVersion;
@@ -996,7 +993,10 @@ function showUpdateBanner(latestVersion){
 
 async function fetchTextNoCache(url){
  const sep=url.includes("?")?"&":"?";
- const r=await fetch(url+sep+"t="+Date.now(),{cache:"no-store",headers:{"Cache-Control":"no-cache"}});
+ const r=await fetch(url+sep+"v="+Date.now(),{
+   cache:"no-store",
+   headers:{"Cache-Control":"no-cache, no-store, must-revalidate","Pragma":"no-cache","Expires":"0"}
+ });
  if(!r.ok)throw new Error(url+": "+r.status);
  return await r.text();
 }
@@ -1005,47 +1005,39 @@ async function checkForAppUpdate(){
  if(updateCheckBusy)return;
  updateCheckBusy=true;
  try{
-  const versionText=await fetchTextNoCache(VERSION_URL);
-  const info=JSON.parse(versionText);
+  const info=JSON.parse(await fetchTextNoCache(VERSION_URL));
   const latest=String(info.version||"").trim();
   if(!latest || latest===APP_VERSION){hideUpdateBanner();return}
-  if(localStorage.getItem(UPDATE_ACK_KEY)===latest){hideUpdateBanner();return}
-
-  // Главное исправление: уведомляем только когда НОВЫЙ index.html уже реально доступен на GitHub Pages.
-  // Это исключает ситуацию, когда version.json обновился раньше самого приложения.
   const freshHtml=await fetchTextNoCache("./index.html");
   const m=freshHtml.match(/const\s+APP_VERSION\s*=\s*["']([^"']+)["']/);
-  const publishedIndexVersion=m?String(m[1]).trim():"";
-  if(publishedIndexVersion===latest)showUpdateBanner(latest);
-  else hideUpdateBanner();
+  const published=m?String(m[1]).trim():"";
+  if(published===latest)showUpdateBanner(latest); else hideUpdateBanner();
  }catch(e){console.debug("MY ELECTRO update check unavailable",e)}
  finally{updateCheckBusy=false}
 }
 
 function applyAppUpdate(){
- const latest=updateLatest || document.getElementById("updateBanner")?.dataset.version || "";
- if(latest)localStorage.setItem(UPDATE_ACK_KEY,latest);
+ const latest=updateLatest || document.getElementById("updateBanner")?.dataset.version || Date.now();
  const b=document.getElementById("updateBanner");
  if(b){
   const s=b.querySelector("span"); if(s)s.textContent="Обновляем MY ELECTRO…";
   const btn=b.querySelector("button"); if(btn)btn.disabled=true;
  }
- // Новый URL заставляет браузер запросить свежий документ.
  setTimeout(()=>{
-   const u=new URL(location.origin+location.pathname);
-   u.searchParams.set("app_version",latest||Date.now());
-   u.searchParams.set("reload",Date.now());
+   const u=new URL(location.href);
+   u.searchParams.set("app_version",String(latest));
+   u.searchParams.set("reload",String(Date.now()));
    location.replace(u.toString());
- },300);
+ },250);
 }
 
-// Одна проверка после запуска, затем раз в 5 минут. При возврате — не чаще одного раза.
-setTimeout(checkForAppUpdate,4000);
-setInterval(checkForAppUpdate,300000);
-let lastResumeCheck=0;
-document.addEventListener("visibilitychange",()=>{
- if(!document.hidden && Date.now()-lastResumeCheck>60000){lastResumeCheck=Date.now();setTimeout(checkForAppUpdate,1200)}
-});
+// Проверяем при запуске, каждые 30 секунд и каждый раз при возврате в приложение.
+setTimeout(checkForAppUpdate,1500);
+setInterval(checkForAppUpdate,30000);
+document.addEventListener("visibilitychange",()=>{if(!document.hidden)setTimeout(checkForAppUpdate,250)});
+window.addEventListener("focus",()=>setTimeout(checkForAppUpdate,250));
+window.addEventListener("pageshow",()=>setTimeout(checkForAppUpdate,250));
+window.addEventListener("online",()=>setTimeout(checkForAppUpdate,250));
 
 const CUSTOM_SECTION="СВОЯ РАБОТА";
 function ensureCustomSection(){
