@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0d0f10">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="MY ELECTRO">
@@ -219,45 +220,6 @@
 }
 </style>
 
-<style id="premium-one-page-print">
-/* MY ELECTRO — premium A4 print/PDF, inspired by selected gold-lightning concept */
-@media print{
- @page{size:A4 portrait;margin:6mm!important}
- html,body{width:210mm!important;min-height:297mm!important;margin:0!important;padding:0!important;background:#fff!important}
- body{overflow:visible!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
- .main,#content{width:100%!important;max-width:none!important;margin:0!important;padding:0!important}
- .print-sheet{position:relative!important;box-sizing:border-box!important;width:100%!important;min-height:284mm!important;max-height:284mm!important;overflow:hidden!important;padding:9mm 10mm 7mm!important;border:1.2mm solid #f2b400!important;background:linear-gradient(145deg,#fff 0%,#fffdf5 55%,#fff 100%)!important}
- .print-sheet:before,.print-sheet:after{position:absolute!important;z-index:0!important;color:#f5b800!important;font-size:27mm!important;font-weight:900!important;line-height:.78!important;opacity:.16!important;white-space:pre!important;pointer-events:none!important;content:"⚡\A ⚡\A⚡\A  ⚡"!important}
- .print-sheet:before{left:-4mm!important;top:22mm!important;transform:rotate(-8deg)!important}
- .print-sheet:after{right:-4mm!important;bottom:23mm!important;transform:rotate(172deg)!important}
- .print-sheet>*{position:relative!important;z-index:1!important}
- .print-header{border-bottom:1.2mm solid #f2b400!important;padding:0 0 4mm!important;margin:0 0 4mm!important}
- .print-brand{gap:3mm!important}.print-bolt{color:#f2b400!important;font-size:11mm!important;text-shadow:0 0 2mm rgba(242,180,0,.28)!important}
- .print-brand-name{font-size:8mm!important;line-height:1!important;font-weight:950!important;letter-spacing:.2mm!important;color:#111!important}
- .print-brand-sub{font-size:2.4mm!important;letter-spacing:.45mm!important;color:#555!important;margin-top:1mm!important}
- .print-doc-title{font-size:6.5mm!important;margin:4mm 0 3mm!important;color:#111!important}
- .print-client-grid{grid-template-columns:1fr 1fr!important;gap:2mm!important}
- .print-client-grid>div,.print-comment{padding:2.2mm 2.6mm!important;border:.35mm solid #e5c45a!important;border-radius:2mm!important;background:rgba(255,255,255,.94)!important}
- .print-client-grid span,.print-comment span{font-size:2.1mm!important;color:#777!important}.print-client-grid b,.print-comment b{font-size:2.8mm!important}
- .print-work-title{font-size:4mm!important;margin:4mm 0 2mm!important}
- .estimate-table{font-size:2.25mm!important;line-height:1.08!important;table-layout:fixed!important}
- .estimate-table th{background:#f5bd19!important;color:#111!important;font-weight:900!important}
- .estimate-table th,.estimate-table td{padding:1.15mm 1mm!important;border:.25mm solid #aaa!important}
- .estimate-table th:nth-child(1),.estimate-table td:nth-child(1){width:5%!important}
- .estimate-table th:nth-child(2),.estimate-table td:nth-child(2){width:18%!important}
- .estimate-table th:nth-child(3),.estimate-table td:nth-child(3){width:32%!important}
- .estimate-table th:nth-child(4),.estimate-table td:nth-child(4){width:8%!important}
- .estimate-table th:nth-child(5),.estimate-table td:nth-child(5){width:10%!important}
- .estimate-table th:nth-child(6),.estimate-table td:nth-child(6){width:12%!important}
- .estimate-table th:nth-child(7),.estimate-table td:nth-child(7){width:15%!important}
- .print-summary{max-width:78mm!important;margin:3mm 0 0 auto!important;font-size:2.8mm!important}
- .print-summary>div{padding:1mm 1.5mm!important}.print-grand-total{font-size:4.4mm!important;background:#f5bd19!important;border-top:0!important;padding:2mm!important}
- .print-thanks{position:absolute!important;left:10mm!important;right:10mm!important;bottom:5mm!important;margin:0!important;padding:3mm 0 0!important;border-top:.45mm solid #f2b400!important;text-align:center!important;background:transparent!important}
- .print-thanks-bolt{font-size:5.5mm!important;color:#f2b400!important}.print-thanks b{font-size:4.2mm!important;font-style:italic!important}.print-thanks span{font-size:2.2mm!important;letter-spacing:.6mm!important}
- .table-wrap{max-height:145mm!important;overflow:hidden!important}
- tr{break-inside:avoid!important;page-break-inside:avoid!important}
-}
-</style>
 
 <style id="estimate-client-direct-edit">
 .estimate-client-edit{margin-bottom:16px;padding:15px;background:#202429;border:1px solid #3a4147;border-radius:13px}
@@ -580,144 +542,26 @@ input:focus,select:focus,textarea:focus{outline:2px solid rgba(240,201,40,.42);o
 }
 </style>
 
-<link rel="manifest" href="./manifest.webmanifest?v=202609307">
-<link rel="icon" type="image/png" sizes="192x192" href="./icon-192-v7.png?v=7">
-<link rel="icon" type="image/png" sizes="512x512" href="./icon-512-v7.png?v=7">
-<link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon-v7.png?v=7">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="MY ELECTRO">
-<meta name="theme-color" content="#111111">
-
-<style id="smart-print-pagination-v8">
-/* MY ELECTRO v8 — smart A4 pagination:
-   short estimates stay on one page; long estimates flow naturally;
-   totals + thank-you block remain at the end of the final page. */
-@media print{
-  @page{size:A4 portrait;margin:6mm!important}
-  html,body{width:auto!important;min-height:0!important;height:auto!important;overflow:visible!important}
-  .main,#content{height:auto!important;overflow:visible!important}
-  .print-sheet{
-    display:block!important;
-    position:relative!important;
-    width:100%!important;
-    min-height:0!important;
-    max-height:none!important;
-    height:auto!important;
-    overflow:visible!important;
-    box-sizing:border-box!important;
-    padding:8mm 9mm 7mm!important;
-    border:1.2mm solid #f2b400!important;
-    page-break-after:auto!important;
-    break-after:auto!important;
-  }
-  .table-wrap{
-    max-height:none!important;
-    height:auto!important;
-    overflow:visible!important;
-  }
-  .estimate-table{page-break-inside:auto!important;break-inside:auto!important}
-  .estimate-table thead{display:table-header-group!important}
-  .estimate-table tbody{display:table-row-group!important}
-  .estimate-table tr{page-break-inside:avoid!important;break-inside:avoid!important}
-  .print-summary{
-    break-inside:avoid!important;
-    page-break-inside:avoid!important;
-    margin-top:4mm!important;
-  }
-  .print-thanks{
-    position:static!important;
-    left:auto!important;right:auto!important;bottom:auto!important;
-    display:block!important;
-    margin:7mm 0 0!important;
-    padding:4mm 0 1mm!important;
-    border-top:.45mm solid #f2b400!important;
-    break-inside:avoid!important;
-    page-break-inside:avoid!important;
-  }
-  /* Decorative bolts stay behind content without reserving a second page. */
-  .print-sheet:before{position:absolute!important;top:20mm!important;bottom:auto!important}
-  .print-sheet:after{position:absolute!important;top:auto!important;bottom:10mm!important}
+<style id="mobile-header-scroll-fix">
+/* Fix only: on phones the Price header/actions scroll normally with content and never overlay section titles. */
+@media (max-width:600px){
+  .top{position:relative!important;top:auto!important;z-index:20!important;}
 }
 </style>
 
-
-<style id="top-actions-touch-fix-v9">
-/* Mobile touch fix: keep Archive / Price manager / Account above page content */
-.top{isolation:isolate}
-.badge,.top-quick-actions{position:relative;z-index:1002;pointer-events:auto!important}
-.top-quick-btn,.account-icon-btn{position:relative;z-index:1003;pointer-events:auto!important;touch-action:manipulation;-webkit-user-select:none;user-select:none}
-@media(max-width:600px){
- .top{z-index:1100!important;overflow:visible!important}
- .top h1{position:relative;z-index:1;pointer-events:none}
- .badge{display:flex!important;flex:0 0 auto!important;min-width:max-content!important}
- .top-quick-actions{display:flex!important;align-items:center!important}
- .top-quick-btn,.account-icon-btn{min-width:42px!important;min-height:42px!important;width:42px!important;height:42px!important}
-}
-</style>
-
-<style id="android-scroll-fix-v12">
-/* Android/PWA stable scrolling:
-   the app content itself is the scroll container; body never owns the scroll. */
-@media screen and (max-width:700px){
-  html,body{
-    width:100%!important;
-    height:100%!important;
-    min-height:100%!important;
-    margin:0!important;
-    overflow:hidden!important;
-    overscroll-behavior:none!important;
-  }
-  body{
-    padding-bottom:0!important;
-    touch-action:auto!important;
-  }
-  .app{
-    display:block!important;
-    position:fixed!important;
-    inset:0!important;
-    width:100%!important;
-    height:100dvh!important;
-    min-height:0!important;
-    overflow:hidden!important;
-  }
-  .main{
-    position:absolute!important;
-    left:0!important;
-    right:0!important;
-    top:0!important;
-    bottom:calc(78px + env(safe-area-inset-bottom))!important;
-    margin:0!important;
-    width:auto!important;
-    height:auto!important;
-    min-height:0!important;
-    max-height:none!important;
-    overflow-x:hidden!important;
-    overflow-y:scroll!important;
-    -webkit-overflow-scrolling:touch!important;
-    overscroll-behavior-y:contain!important;
-    touch-action:pan-y pinch-zoom!important;
-    padding-bottom:28px!important;
-  }
-  #content{
-    height:auto!important;
-    min-height:calc(100% + 1px)!important;
-    max-height:none!important;
-    overflow:visible!important;
-    touch-action:pan-y!important;
-  }
-  .card,.hero,.catgrid,.price-list,.manager-wrap,.archive-list{
-    max-height:none!important;
-  }
-  .side{
-    position:fixed!important;
-    left:0!important;
-    right:0!important;
-    bottom:0!important;
-    z-index:1000!important;
-    touch-action:manipulation!important;
-  }
-  input,textarea,select,button{touch-action:manipulation}
+<style id="ios-width-fix">
+/* iPhone/Safari only: keep the app at the real viewport width; Android layout is untouched. */
+@supports (-webkit-touch-callout: none) {
+  html { width:100%; max-width:100%; overflow-x:hidden; -webkit-text-size-adjust:100%; }
+  body { width:100%; max-width:100%; overflow-x:hidden; }
+  .app { width:100%; max-width:100%; min-width:0; overflow-x:hidden; }
+  .main { width:100%!important; max-width:100%!important; min-width:0!important; margin-left:0!important; }
+  #content { width:100%!important; max-width:100%!important; min-width:0!important; overflow-x:hidden; }
+  .top { width:100%; max-width:100%; min-width:0; }
+  .top h1 { min-width:0; }
+  .badge,.top-quick-actions { flex:0 0 auto; }
+  .card,.catgrid,.cat,.price-manager,.manager-section { max-width:100%; min-width:0; }
+  .table-wrap { max-width:100%; }
 }
 </style>
 </head>
@@ -821,20 +665,7 @@ async function finishPasswordRecovery(){
 }
 function loginUser(){showAuthMode("login")}
 async function logoutUser(){closeAccount();await saveCloudState(true);await sb.auth.signOut();localStorage.removeItem(APP_USER_KEY);localStorage.removeItem("my_electro_current_account_id_v1");authUser=null;electroId="";currentUser="";document.getElementById("authOverlay").style.display="flex";showAuthMode("login")}
-function updateUserBadge(){
- const b=document.querySelector(".badge");
- if(!b)return;
- b.innerHTML=`<div class="top-quick-actions"><button type="button" class="top-quick-btn" data-top-action="archive" title="Архив заказов" aria-label="Архив заказов">🗂️</button><button type="button" class="top-quick-btn" data-top-action="editor" title="Управление прайсом" aria-label="Управление прайсом">🛠️</button><button type="button" class="account-icon-btn" data-top-action="account" title="Мой аккаунт" aria-label="Мой аккаунт">👤</button></div>`;
- b.querySelectorAll("[data-top-action]").forEach(btn=>{
-  btn.addEventListener("click",e=>{
-   e.preventDefault();e.stopPropagation();
-   const a=btn.dataset.topAction;
-   if(a==="archive")go("Архив заказов");
-   else if(a==="editor")go("Управление прайсом");
-   else if(a==="account")openAccount();
-  });
- });
-}
+function updateUserBadge(){const b=document.querySelector(".badge");if(b)b.innerHTML=`<div class="top-quick-actions"><button class="top-quick-btn" onclick="go('Архив заказов')" title="Архив заказов" aria-label="Архив заказов">🗂️</button><button class="top-quick-btn" onclick="go('Управление прайсом')" title="Управление прайсом" aria-label="Управление прайсом">🛠️</button><button class="account-icon-btn" onclick="openAccount()" title="Мой аккаунт" aria-label="Мой аккаунт">👤</button></div>`}
 function openAccount(){if(!authUser)return;document.getElementById("accountName").value=currentUser||"";document.getElementById("accountEmail").value=authUser.email||"";document.getElementById("accountElectroId").value=electroId||"";document.getElementById("accountIdText").textContent=electroId||"MY ELECTRO";document.getElementById("accountMessage").textContent="";document.getElementById("accountModal").style.display="flex"}
 function closeAccount(){document.getElementById("accountModal").style.display="none"}
 async function saveAccountChanges(){if(!authUser)return;const name=String(document.getElementById("accountName").value||"").trim();const msg=document.getElementById("accountMessage");if(name.length<2){msg.textContent="Введите имя — минимум 2 символа";msg.style.color="#ef4444";return}msg.textContent="Сохраняем…";msg.style.color="#aab2b9";const {error}=await sb.from("profiles").update({name,updated_at:new Date().toISOString()}).eq("id",authUser.id);if(error){msg.textContent="Не удалось сохранить: "+error.message;msg.style.color="#ef4444";return}await sb.auth.updateUser({data:{name}});currentUser=name;localStorage.setItem(APP_USER_KEY,currentUser);updateUserBadge();msg.textContent="Изменения сохранены";msg.style.color="#22c55e";setTimeout(closeAccount,700)}
@@ -858,83 +689,23 @@ async function saveCloudState(force=false){
 const navItems=[["⌂","Главная"],["₽","Прайс"],["▦","Калькулятор"],["▤","Сметы"]];
 document.getElementById("nav").innerHTML=navItems.map(x=>{const page=x[1]==="Сметы"?"Сметы и заказы":x[1];return `<button onclick="go('${page}')" id="n-${page}"><span class="nav-icon">${x[0]}</span><span class="nav-label">${x[1]}</span></button>`}).join("");
 
-const APP_VERSION="2026.09.30.12";
-const VERSION_URL="./version.json";
-const UPDATE_ACK_KEY="my_electro_update_ack_v3";
+const APP_VERSION="2026.09.30.2";
 let updateCheckBusy=false;
-let updateLatest="";
-
-function hideUpdateBanner(){
- const b=document.getElementById("updateBanner");
- if(b)b.style.display="none";
-}
-
-function showUpdateBanner(latestVersion){
- if(!latestVersion || latestVersion===APP_VERSION)return;
- // Если пользователь уже нажимал «Обновить» именно для этой версии, второй раз её не показываем.
- if(localStorage.getItem(UPDATE_ACK_KEY)===latestVersion)return;
- const b=document.getElementById("updateBanner");
- if(!b)return;
- updateLatest=latestVersion;
- b.dataset.version=latestVersion;
- const s=b.querySelector("span");
- if(s)s.textContent=`Версия ${latestVersion} готова к установке`;
- b.style.display="flex";
-}
-
-async function fetchTextNoCache(url){
- const sep=url.includes("?")?"&":"?";
- const r=await fetch(url+sep+"t="+Date.now(),{cache:"no-store",headers:{"Cache-Control":"no-cache"}});
- if(!r.ok)throw new Error(url+": "+r.status);
- return await r.text();
-}
-
 async function checkForAppUpdate(){
- if(updateCheckBusy)return;
- updateCheckBusy=true;
+ if(updateCheckBusy)return; updateCheckBusy=true;
  try{
-  const versionText=await fetchTextNoCache(VERSION_URL);
-  const info=JSON.parse(versionText);
-  const latest=String(info.version||"").trim();
-  if(!latest || latest===APP_VERSION){hideUpdateBanner();return}
-  if(localStorage.getItem(UPDATE_ACK_KEY)===latest){hideUpdateBanner();return}
-
-  // Главное исправление: уведомляем только когда НОВЫЙ index.html уже реально доступен на GitHub Pages.
-  // Это исключает ситуацию, когда version.json обновился раньше самого приложения.
-  const freshHtml=await fetchTextNoCache("./index.html");
-  const m=freshHtml.match(/const\s+APP_VERSION\s*=\s*["']([^"']+)["']/);
-  const publishedIndexVersion=m?String(m[1]).trim():"";
-  if(publishedIndexVersion===latest)showUpdateBanner(latest);
-  else hideUpdateBanner();
- }catch(e){console.debug("MY ELECTRO update check unavailable",e)}
- finally{updateCheckBusy=false}
+  const base=location.origin+location.pathname;
+  const r=await fetch(base+"?update_check="+Date.now(),{cache:"no-store"});
+  const t=await r.text();
+  const m=t.match(/const APP_VERSION=["']([^"']+)["']/);
+  if(m&&m[1]!==APP_VERSION){const b=document.getElementById("updateBanner");if(b)b.style.display="flex"}
+ }catch(e){console.debug("Update check unavailable",e)}finally{updateCheckBusy=false}
 }
-
 function applyAppUpdate(){
- const latest=updateLatest || document.getElementById("updateBanner")?.dataset.version || "";
- if(latest)localStorage.setItem(UPDATE_ACK_KEY,latest);
- const b=document.getElementById("updateBanner");
- if(b){
-  const s=b.querySelector("span"); if(s)s.textContent="Обновляем MY ELECTRO…";
-  const btn=b.querySelector("button"); if(btn)btn.disabled=true;
- }
- // Новый URL заставляет браузер запросить свежий документ.
- setTimeout(()=>{
-   const u=new URL(location.origin+location.pathname);
-   u.searchParams.set("app_version",latest||Date.now());
-   u.searchParams.set("reload",Date.now());
-   location.replace(u.toString());
- },300);
+ const u=new URL(location.href);u.searchParams.set("v",Date.now());location.replace(u.toString());
 }
-
-// Одна проверка после запуска, затем раз в 5 минут. При возврате — не чаще одного раза.
-setTimeout(checkForAppUpdate,4000);
-setInterval(checkForAppUpdate,300000);
-let lastResumeCheck=0;
-document.addEventListener("visibilitychange",()=>{
- if(!document.hidden && Date.now()-lastResumeCheck>60000){lastResumeCheck=Date.now();setTimeout(checkForAppUpdate,1200)}
-});
-
+setTimeout(checkForAppUpdate,2500);setInterval(checkForAppUpdate,10*60*1000);
+document.addEventListener("visibilitychange",()=>{if(!document.hidden)checkForAppUpdate()});
 const CUSTOM_SECTION="СВОЯ РАБОТА";
 function ensureCustomSection(){
   if(!Array.isArray(price))return;
@@ -965,7 +736,7 @@ function loadPrice(){
 }
 function savePrice(){localStorage.setItem(ukey("price"),JSON.stringify(price));scheduleCloudSave()}
 function saveEstimate(){localStorage.setItem(ukey("estimate"),JSON.stringify(estimate));scheduleCloudSave()}
-function go(page){current=page;currentCat=null;document.querySelectorAll(".nav button").forEach(b=>b.classList.remove("active"));const navBtn=document.getElementById("n-"+page);if(navBtn)navBtn.classList.add("active");render()}
+function go(page){current=page;currentCat=null;document.querySelectorAll(".nav button").forEach(b=>b.classList.remove("active"));document.getElementById("n-"+page).classList.add("active");render()}
 function render(){document.getElementById("title").textContent=current;const c=document.getElementById("content");
  if(current==="Главная")return home(c); if(current==="Прайс")return pricePage(c); if(current==="Калькулятор")return calc(c);
  if(current==="Сметы и заказы")return orders(c); if(current==="Архив заказов")return archive(c);
@@ -1104,26 +875,10 @@ function saveOrder(){
  localStorage.setItem(ukey("orders"),JSON.stringify(ordersList));scheduleCloudSave();
  const wasEditing=!!editingOrderId;
  editingOrderId=null;
- resetForNextOrder();
- alert(wasEditing?"Изменения заказа сохранены. Смета готова для следующего заказа":"Заказ сохранён в архиве. Смета готова для следующего заказа");
- go("Сметы и заказы");
+ alert(wasEditing?"Изменения заказа сохранены":"Заказ сохранён в архиве");
+ go("Архив заказов");
 }
-function resetForNextOrder(){
- estimate=[];
- orderForm={client:"",phone:"",address:"",date:today(),comment:"",discount:"0"};
- editingOrderId=null;
- localStorage.setItem(ukey("estimate"),JSON.stringify(estimate));
- localStorage.setItem(ukey("order_form"),JSON.stringify(orderForm));
- scheduleCloudSave();
-}
-function printOrder(){
- saveOrderForm();
- let cleared=false;
- const finish=()=>{if(cleared)return;cleared=true;window.removeEventListener("afterprint",finish);resetForNextOrder();render()};
- window.addEventListener("afterprint",finish,{once:true});
- window.print();
- setTimeout(()=>{if(!cleared&&document.visibilityState==="visible")finish()},1500);
-}
+function printOrder(){saveOrderForm();window.print()}
 function archive(c){c.innerHTML=`<div class="card"><h3>🗂️ Архив заказов</h3>${ordersList.length?ordersList.map((o,i)=>`<div class="archive-item"><div><b>${esc(o.client||"Без имени")}</b><div class="muted">${esc(o.date)} · ${esc(o.phone||"Телефон не указан")}</div><div class="muted">${esc(o.address||"Адрес не указан")}</div></div><div class="archive-right"><b>${money(o.total)} ₽</b><button class="btn secondary no-print" onclick="viewOrder(${i})">✏️ Редактировать</button><button class="btn danger no-print" onclick="deleteOrder(${i})">🗑️ Удалить</button></div></div>`).join(""):`<p class="muted">Архив пока пуст. Сохранённые заказы появятся здесь.</p>`}</div>`}
 function viewOrder(i){
  const o=ordersList[i];
