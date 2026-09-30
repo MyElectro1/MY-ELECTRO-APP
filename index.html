@@ -655,6 +655,18 @@ input:focus,select:focus,textarea:focus{outline:2px solid rgba(240,201,40,.42);o
  .top-quick-btn,.account-icon-btn{min-width:42px!important;min-height:42px!important;width:42px!important;height:42px!important}
 }
 </style>
+
+<style id="android-scroll-fix-v11">
+/* Android/Chrome vertical scrolling fix. Additive only: layout/features unchanged. */
+@media screen and (max-width:700px){
+  html{height:auto!important;min-height:100%!important;overflow-x:hidden!important;overflow-y:auto!important;touch-action:pan-y pinch-zoom!important;-webkit-overflow-scrolling:touch}
+  body{height:auto!important;min-height:100dvh!important;overflow-x:hidden!important;overflow-y:auto!important;touch-action:pan-y pinch-zoom!important;-webkit-overflow-scrolling:touch;overscroll-behavior-y:auto}
+  .app,.main,#content{height:auto!important;min-height:0!important;max-height:none!important;overflow:visible!important;touch-action:pan-y!important}
+  .card,.hero,.catgrid,.price-list,.manager-wrap,.archive-list{max-height:none!important}
+  .side{touch-action:manipulation!important}
+  input,textarea,select,button{touch-action:manipulation}
+}
+</style>
 </head>
 <body>
 <div id="authOverlay" class="auth-overlay" style="display:none">
@@ -793,7 +805,7 @@ async function saveCloudState(force=false){
 const navItems=[["⌂","Главная"],["₽","Прайс"],["▦","Калькулятор"],["▤","Сметы"]];
 document.getElementById("nav").innerHTML=navItems.map(x=>{const page=x[1]==="Сметы"?"Сметы и заказы":x[1];return `<button onclick="go('${page}')" id="n-${page}"><span class="nav-icon">${x[0]}</span><span class="nav-label">${x[1]}</span></button>`}).join("");
 
-const APP_VERSION="2026.09.30.10";
+const APP_VERSION="2026.09.30.11";
 const VERSION_URL="./version.json";
 const UPDATE_ACK_KEY="my_electro_update_ack_v3";
 let updateCheckBusy=false;
