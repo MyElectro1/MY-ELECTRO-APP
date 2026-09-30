@@ -588,6 +588,73 @@ input:focus,select:focus,textarea:focus{outline:2px solid rgba(240,201,40,.42);o
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="MY ELECTRO">
 <meta name="theme-color" content="#111111">
+
+<style id="smart-print-pagination-v8">
+/* MY ELECTRO v8 — smart A4 pagination:
+   short estimates stay on one page; long estimates flow naturally;
+   totals + thank-you block remain at the end of the final page. */
+@media print{
+  @page{size:A4 portrait;margin:6mm!important}
+  html,body{width:auto!important;min-height:0!important;height:auto!important;overflow:visible!important}
+  .main,#content{height:auto!important;overflow:visible!important}
+  .print-sheet{
+    display:block!important;
+    position:relative!important;
+    width:100%!important;
+    min-height:0!important;
+    max-height:none!important;
+    height:auto!important;
+    overflow:visible!important;
+    box-sizing:border-box!important;
+    padding:8mm 9mm 7mm!important;
+    border:1.2mm solid #f2b400!important;
+    page-break-after:auto!important;
+    break-after:auto!important;
+  }
+  .table-wrap{
+    max-height:none!important;
+    height:auto!important;
+    overflow:visible!important;
+  }
+  .estimate-table{page-break-inside:auto!important;break-inside:auto!important}
+  .estimate-table thead{display:table-header-group!important}
+  .estimate-table tbody{display:table-row-group!important}
+  .estimate-table tr{page-break-inside:avoid!important;break-inside:avoid!important}
+  .print-summary{
+    break-inside:avoid!important;
+    page-break-inside:avoid!important;
+    margin-top:4mm!important;
+  }
+  .print-thanks{
+    position:static!important;
+    left:auto!important;right:auto!important;bottom:auto!important;
+    display:block!important;
+    margin:7mm 0 0!important;
+    padding:4mm 0 1mm!important;
+    border-top:.45mm solid #f2b400!important;
+    break-inside:avoid!important;
+    page-break-inside:avoid!important;
+  }
+  /* Decorative bolts stay behind content without reserving a second page. */
+  .print-sheet:before{position:absolute!important;top:20mm!important;bottom:auto!important}
+  .print-sheet:after{position:absolute!important;top:auto!important;bottom:10mm!important}
+}
+</style>
+
+
+<style id="top-actions-touch-fix-v9">
+/* Mobile touch fix: keep Archive / Price manager / Account above page content */
+.top{isolation:isolate}
+.badge,.top-quick-actions{position:relative;z-index:1002;pointer-events:auto!important}
+.top-quick-btn,.account-icon-btn{position:relative;z-index:1003;pointer-events:auto!important;touch-action:manipulation;-webkit-user-select:none;user-select:none}
+@media(max-width:600px){
+ .top{z-index:1100!important;overflow:visible!important}
+ .top h1{position:relative;z-index:1;pointer-events:none}
+ .badge{display:flex!important;flex:0 0 auto!important;min-width:max-content!important}
+ .top-quick-actions{display:flex!important;align-items:center!important}
+ .top-quick-btn,.account-icon-btn{min-width:42px!important;min-height:42px!important;width:42px!important;height:42px!important}
+}
+</style>
 </head>
 <body>
 <div id="authOverlay" class="auth-overlay" style="display:none">
@@ -689,7 +756,20 @@ async function finishPasswordRecovery(){
 }
 function loginUser(){showAuthMode("login")}
 async function logoutUser(){closeAccount();await saveCloudState(true);await sb.auth.signOut();localStorage.removeItem(APP_USER_KEY);localStorage.removeItem("my_electro_current_account_id_v1");authUser=null;electroId="";currentUser="";document.getElementById("authOverlay").style.display="flex";showAuthMode("login")}
-function updateUserBadge(){const b=document.querySelector(".badge");if(b)b.innerHTML=`<div class="top-quick-actions"><button class="top-quick-btn" onclick="go('Архив заказов')" title="Архив заказов" aria-label="Архив заказов">🗂️</button><button class="top-quick-btn" onclick="go('Управление прайсом')" title="Управление прайсом" aria-label="Управление прайсом">🛠️</button><button class="account-icon-btn" onclick="openAccount()" title="Мой аккаунт" aria-label="Мой аккаунт">👤</button></div>`}
+function updateUserBadge(){
+ const b=document.querySelector(".badge");
+ if(!b)return;
+ b.innerHTML=`<div class="top-quick-actions"><button type="button" class="top-quick-btn" data-top-action="archive" title="Архив заказов" aria-label="Архив заказов">🗂️</button><button type="button" class="top-quick-btn" data-top-action="editor" title="Управление прайсом" aria-label="Управление прайсом">🛠️</button><button type="button" class="account-icon-btn" data-top-action="account" title="Мой аккаунт" aria-label="Мой аккаунт">👤</button></div>`;
+ b.querySelectorAll("[data-top-action]").forEach(btn=>{
+  btn.addEventListener("click",e=>{
+   e.preventDefault();e.stopPropagation();
+   const a=btn.dataset.topAction;
+   if(a==="archive")go("Архив заказов");
+   else if(a==="editor")go("Управление прайсом");
+   else if(a==="account")openAccount();
+  });
+ });
+}
 function openAccount(){if(!authUser)return;document.getElementById("accountName").value=currentUser||"";document.getElementById("accountEmail").value=authUser.email||"";document.getElementById("accountElectroId").value=electroId||"";document.getElementById("accountIdText").textContent=electroId||"MY ELECTRO";document.getElementById("accountMessage").textContent="";document.getElementById("accountModal").style.display="flex"}
 function closeAccount(){document.getElementById("accountModal").style.display="none"}
 async function saveAccountChanges(){if(!authUser)return;const name=String(document.getElementById("accountName").value||"").trim();const msg=document.getElementById("accountMessage");if(name.length<2){msg.textContent="Введите имя — минимум 2 символа";msg.style.color="#ef4444";return}msg.textContent="Сохраняем…";msg.style.color="#aab2b9";const {error}=await sb.from("profiles").update({name,updated_at:new Date().toISOString()}).eq("id",authUser.id);if(error){msg.textContent="Не удалось сохранить: "+error.message;msg.style.color="#ef4444";return}await sb.auth.updateUser({data:{name}});currentUser=name;localStorage.setItem(APP_USER_KEY,currentUser);updateUserBadge();msg.textContent="Изменения сохранены";msg.style.color="#22c55e";setTimeout(closeAccount,700)}
@@ -713,7 +793,7 @@ async function saveCloudState(force=false){
 const navItems=[["⌂","Главная"],["₽","Прайс"],["▦","Калькулятор"],["▤","Сметы"]];
 document.getElementById("nav").innerHTML=navItems.map(x=>{const page=x[1]==="Сметы"?"Сметы и заказы":x[1];return `<button onclick="go('${page}')" id="n-${page}"><span class="nav-icon">${x[0]}</span><span class="nav-label">${x[1]}</span></button>`}).join("");
 
-const APP_VERSION="2026.09.30.7";
+const APP_VERSION="2026.09.30.9";
 const VERSION_URL="./version.json";
 const UPDATE_ACK_KEY="my_electro_update_ack_v3";
 let updateCheckBusy=false;
