@@ -220,6 +220,45 @@
 }
 </style>
 
+<style id="premium-one-page-print">
+/* MY ELECTRO — premium A4 print/PDF, inspired by selected gold-lightning concept */
+@media print{
+ @page{size:A4 portrait;margin:6mm!important}
+ html,body{width:210mm!important;min-height:297mm!important;margin:0!important;padding:0!important;background:#fff!important}
+ body{overflow:visible!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+ .main,#content{width:100%!important;max-width:none!important;margin:0!important;padding:0!important}
+ .print-sheet{position:relative!important;box-sizing:border-box!important;width:100%!important;min-height:284mm!important;max-height:284mm!important;overflow:hidden!important;padding:9mm 10mm 7mm!important;border:1.2mm solid #f2b400!important;background:linear-gradient(145deg,#fff 0%,#fffdf5 55%,#fff 100%)!important}
+ .print-sheet:before,.print-sheet:after{position:absolute!important;z-index:0!important;color:#f5b800!important;font-size:27mm!important;font-weight:900!important;line-height:.78!important;opacity:.16!important;white-space:pre!important;pointer-events:none!important;content:"⚡\A ⚡\A⚡\A  ⚡"!important}
+ .print-sheet:before{left:-4mm!important;top:22mm!important;transform:rotate(-8deg)!important}
+ .print-sheet:after{right:-4mm!important;bottom:23mm!important;transform:rotate(172deg)!important}
+ .print-sheet>*{position:relative!important;z-index:1!important}
+ .print-header{border-bottom:1.2mm solid #f2b400!important;padding:0 0 4mm!important;margin:0 0 4mm!important}
+ .print-brand{gap:3mm!important}.print-bolt{color:#f2b400!important;font-size:11mm!important;text-shadow:0 0 2mm rgba(242,180,0,.28)!important}
+ .print-brand-name{font-size:8mm!important;line-height:1!important;font-weight:950!important;letter-spacing:.2mm!important;color:#111!important}
+ .print-brand-sub{font-size:2.4mm!important;letter-spacing:.45mm!important;color:#555!important;margin-top:1mm!important}
+ .print-doc-title{font-size:6.5mm!important;margin:4mm 0 3mm!important;color:#111!important}
+ .print-client-grid{grid-template-columns:1fr 1fr!important;gap:2mm!important}
+ .print-client-grid>div,.print-comment{padding:2.2mm 2.6mm!important;border:.35mm solid #e5c45a!important;border-radius:2mm!important;background:rgba(255,255,255,.94)!important}
+ .print-client-grid span,.print-comment span{font-size:2.1mm!important;color:#777!important}.print-client-grid b,.print-comment b{font-size:2.8mm!important}
+ .print-work-title{font-size:4mm!important;margin:4mm 0 2mm!important}
+ .estimate-table{font-size:2.25mm!important;line-height:1.08!important;table-layout:fixed!important}
+ .estimate-table th{background:#f5bd19!important;color:#111!important;font-weight:900!important}
+ .estimate-table th,.estimate-table td{padding:1.15mm 1mm!important;border:.25mm solid #aaa!important}
+ .estimate-table th:nth-child(1),.estimate-table td:nth-child(1){width:5%!important}
+ .estimate-table th:nth-child(2),.estimate-table td:nth-child(2){width:18%!important}
+ .estimate-table th:nth-child(3),.estimate-table td:nth-child(3){width:32%!important}
+ .estimate-table th:nth-child(4),.estimate-table td:nth-child(4){width:8%!important}
+ .estimate-table th:nth-child(5),.estimate-table td:nth-child(5){width:10%!important}
+ .estimate-table th:nth-child(6),.estimate-table td:nth-child(6){width:12%!important}
+ .estimate-table th:nth-child(7),.estimate-table td:nth-child(7){width:15%!important}
+ .print-summary{max-width:78mm!important;margin:3mm 0 0 auto!important;font-size:2.8mm!important}
+ .print-summary>div{padding:1mm 1.5mm!important}.print-grand-total{font-size:4.4mm!important;background:#f5bd19!important;border-top:0!important;padding:2mm!important}
+ .print-thanks{position:absolute!important;left:10mm!important;right:10mm!important;bottom:5mm!important;margin:0!important;padding:3mm 0 0!important;border-top:.45mm solid #f2b400!important;text-align:center!important;background:transparent!important}
+ .print-thanks-bolt{font-size:5.5mm!important;color:#f2b400!important}.print-thanks b{font-size:4.2mm!important;font-style:italic!important}.print-thanks span{font-size:2.2mm!important;letter-spacing:.6mm!important}
+ .table-wrap{max-height:145mm!important;overflow:hidden!important}
+ tr{break-inside:avoid!important;page-break-inside:avoid!important}
+}
+</style>
 
 <style id="estimate-client-direct-edit">
 .estimate-client-edit{margin-bottom:16px;padding:15px;background:#202429;border:1px solid #3a4147;border-radius:13px}
@@ -541,6 +580,9 @@ input:focus,select:focus,textarea:focus{outline:2px solid rgba(240,201,40,.42);o
  .account-card{max-height:90dvh;overflow:auto}
 }
 </style>
+<link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
+<link rel="apple-touch-icon" sizes="512x512" href="./icon-512.png">
+<meta name="theme-color" content="#111111">
 </head>
 <body>
 <div id="authOverlay" class="auth-overlay" style="display:none">
@@ -666,7 +708,7 @@ async function saveCloudState(force=false){
 const navItems=[["⌂","Главная"],["₽","Прайс"],["▦","Калькулятор"],["▤","Сметы"]];
 document.getElementById("nav").innerHTML=navItems.map(x=>{const page=x[1]==="Сметы"?"Сметы и заказы":x[1];return `<button onclick="go('${page}')" id="n-${page}"><span class="nav-icon">${x[0]}</span><span class="nav-label">${x[1]}</span></button>`}).join("");
 
-const APP_VERSION="2026.09.30.4";
+const APP_VERSION="2026.09.30.5";
 const VERSION_URL="./version.json";
 let updateCheckBusy=false;
 
@@ -898,9 +940,11 @@ function resetForNextOrder(){
 }
 function printOrder(){
  saveOrderForm();
+ let cleared=false;
+ const finish=()=>{if(cleared)return;cleared=true;window.removeEventListener("afterprint",finish);resetForNextOrder();render()};
+ window.addEventListener("afterprint",finish,{once:true});
  window.print();
- resetForNextOrder();
- render();
+ setTimeout(()=>{if(!cleared&&document.visibilityState==="visible")finish()},1500);
 }
 function archive(c){c.innerHTML=`<div class="card"><h3>🗂️ Архив заказов</h3>${ordersList.length?ordersList.map((o,i)=>`<div class="archive-item"><div><b>${esc(o.client||"Без имени")}</b><div class="muted">${esc(o.date)} · ${esc(o.phone||"Телефон не указан")}</div><div class="muted">${esc(o.address||"Адрес не указан")}</div></div><div class="archive-right"><b>${money(o.total)} ₽</b><button class="btn secondary no-print" onclick="viewOrder(${i})">✏️ Редактировать</button><button class="btn danger no-print" onclick="deleteOrder(${i})">🗑️ Удалить</button></div></div>`).join(""):`<p class="muted">Архив пока пуст. Сохранённые заказы появятся здесь.</p>`}</div>`}
 function viewOrder(i){
