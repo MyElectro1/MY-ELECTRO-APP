@@ -793,7 +793,7 @@ async function saveCloudState(force=false){
 const navItems=[["⌂","Главная"],["₽","Прайс"],["▦","Калькулятор"],["▤","Сметы"]];
 document.getElementById("nav").innerHTML=navItems.map(x=>{const page=x[1]==="Сметы"?"Сметы и заказы":x[1];return `<button onclick="go('${page}')" id="n-${page}"><span class="nav-icon">${x[0]}</span><span class="nav-label">${x[1]}</span></button>`}).join("");
 
-const APP_VERSION="2026.09.30.9";
+const APP_VERSION="2026.09.30.10";
 const VERSION_URL="./version.json";
 const UPDATE_ACK_KEY="my_electro_update_ack_v3";
 let updateCheckBusy=false;
@@ -900,7 +900,7 @@ function loadPrice(){
 }
 function savePrice(){localStorage.setItem(ukey("price"),JSON.stringify(price));scheduleCloudSave()}
 function saveEstimate(){localStorage.setItem(ukey("estimate"),JSON.stringify(estimate));scheduleCloudSave()}
-function go(page){current=page;currentCat=null;document.querySelectorAll(".nav button").forEach(b=>b.classList.remove("active"));document.getElementById("n-"+page).classList.add("active");render()}
+function go(page){current=page;currentCat=null;document.querySelectorAll(".nav button").forEach(b=>b.classList.remove("active"));const navBtn=document.getElementById("n-"+page);if(navBtn)navBtn.classList.add("active");render()}
 function render(){document.getElementById("title").textContent=current;const c=document.getElementById("content");
  if(current==="Главная")return home(c); if(current==="Прайс")return pricePage(c); if(current==="Калькулятор")return calc(c);
  if(current==="Сметы и заказы")return orders(c); if(current==="Архив заказов")return archive(c);
