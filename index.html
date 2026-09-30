@@ -770,6 +770,68 @@ input:focus,select:focus,textarea:focus{outline:2px solid rgba(240,201,40,.42);o
   #content{padding-bottom:0!important;margin-bottom:0!important}
 }
 </style>
+
+<style id="mobile-bottom-flush-v17">
+/* V17: keep the bottom navigation physically flush with the viewport edge.
+   Do not use iOS safe-area as extra bar height; it caused a large black shelf. */
+@media screen and (max-width:700px){
+  .app{
+    position:fixed!important;
+    inset:0!important;
+    width:100%!important;
+    height:100dvh!important;
+    min-height:100dvh!important;
+    overflow:hidden!important;
+  }
+  .side{
+    position:fixed!important;
+    left:0!important;right:0!important;bottom:0!important;top:auto!important;
+    width:100%!important;
+    height:72px!important;
+    min-height:72px!important;
+    padding:4px 7px 4px!important;
+    margin:0!important;
+    overflow:hidden!important;
+  }
+  .nav{height:64px!important;min-height:64px!important;align-items:center!important}
+  .nav button{height:56px!important;min-height:56px!important;margin:0!important}
+  .main{bottom:72px!important;padding-bottom:6px!important}
+  #content{padding-bottom:0!important;margin-bottom:0!important}
+}
+</style>
+
+<style id="bottom-nav-true-edge-v17">
+/* V17: keep bottom navigation at the actual visual bottom on iPhone/Android. */
+@media screen and (max-width:700px){
+  html,body{
+    width:100%!important; height:100%!important; min-height:100%!important;
+    margin:0!important; padding:0!important; overflow:hidden!important;
+    background:#151719!important;
+  }
+  .app{
+    position:fixed!important; inset:0!important;
+    width:100vw!important; height:100dvh!important; min-height:100dvh!important;
+    overflow:hidden!important;
+  }
+  .side{
+    position:fixed!important; z-index:1000!important;
+    left:0!important; right:0!important; bottom:0!important; top:auto!important;
+    width:100vw!important; box-sizing:border-box!important;
+    height:calc(62px + env(safe-area-inset-bottom))!important;
+    min-height:calc(62px + env(safe-area-inset-bottom))!important;
+    padding:0 7px env(safe-area-inset-bottom)!important;
+    margin:0!important;
+  }
+  .nav{height:62px!important; min-height:62px!important; align-items:center!important}
+  .nav button{height:54px!important; min-height:54px!important; padding:2px 1px!important}
+  .main{
+    position:absolute!important; top:0!important; left:0!important; right:0!important;
+    bottom:calc(62px + env(safe-area-inset-bottom))!important;
+    padding-bottom:4px!important;
+  }
+  #content{padding-bottom:0!important;margin-bottom:0!important}
+}
+</style>
 </head>
 <body>
 <div id="authOverlay" class="auth-overlay" style="display:none">
@@ -908,7 +970,7 @@ async function saveCloudState(force=false){
 const navItems=[["⌂","Главная"],["₽","Прайс"],["▦","Калькулятор"],["▤","Сметы"]];
 document.getElementById("nav").innerHTML=navItems.map(x=>{const page=x[1]==="Сметы"?"Сметы и заказы":x[1];return `<button onclick="go('${page}')" id="n-${page}"><span class="nav-icon">${x[0]}</span><span class="nav-label">${x[1]}</span></button>`}).join("");
 
-const APP_VERSION="2026.09.30.16";
+const APP_VERSION="2026.09.30.17";
 const VERSION_URL="./version.json";
 const UPDATE_ACK_KEY="my_electro_update_ack_v3";
 let updateCheckBusy=false;
