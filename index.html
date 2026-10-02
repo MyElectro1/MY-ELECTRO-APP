@@ -937,7 +937,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid rgba(240,201,40,.42);o
   }
 }
 </style>
-</head>
+<style id="five-tab-nav-v28">@media screen and (max-width:700px){.side .nav{display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:2px!important;width:100%!important}.side .nav button{min-width:0!important;padding:3px 0!important}.side .nav button .nav-icon{font-size:19px!important}.side .nav button .nav-label{font-size:9px!important;letter-spacing:-.3px!important;white-space:nowrap!important}}</style></head>
 <body>
 <div id="authOverlay" class="auth-overlay" style="display:none">
 <div class="auth-card auth-pro">
@@ -983,12 +983,12 @@ const initialPrice=[{"name":"Монтаж кабеля по стенам","items
 const APP_USER_KEY="my_electro_current_user_v1";
 let currentUser=localStorage.getItem(APP_USER_KEY)||"";
 function userId(name){return String(name||"").trim().toLowerCase().replace(/[^a-zа-яё0-9_-]+/gi,"_").slice(0,50)||"user"}
-function ukey(type){return "my_electro_"+userId(currentUser)+"_"+type+"_v1"}
+function ukey(type){return "my_electro_v31_guest_preview_"+type+"_v1"}
 function readJSON(key,fallback){try{const v=JSON.parse(localStorage.getItem(key));return v??fallback}catch(e){return fallback}}
 function migrateLegacy(){if(!currentUser)return;const marker=ukey("migrated");if(localStorage.getItem(marker))return;const maps=[[KEY,ukey("price")],[estimateKey,ukey("estimate")],["murad_orders",ukey("orders")],["murad_order_form",ukey("order_form")]];for(const [oldk,newk] of maps){if(localStorage.getItem(newk)==null&&localStorage.getItem(oldk)!=null)localStorage.setItem(newk,localStorage.getItem(oldk));}localStorage.setItem(marker,"1")}
 let price=[],estimate=[],ordersList=[],orderForm={};
 let current="Главная", currentCat=null;
-function loadUserData(){migrateLegacy();price=loadPrice();ensureCustomSection();estimate=readJSON(ukey("estimate"),[]);ordersList=readJSON(ukey("orders"),[]);orderForm=readJSON(ukey("order_form"),{})||{}}
+function loadUserData(){price=loadPrice();ensureCustomSection();ensureShieldSections();ensureFullShieldPrices();ensureAVRPrices();ensureMasterContactorPrices();ensureUnifiedContactorPrices();estimate=readJSON(ukey("estimate"),[]);ordersList=readJSON(ukey("orders"),[]);orderForm=readJSON(ukey("order_form"),{})||{}}
 function saveOrderForm(){
  const gv=(id,fallback="")=>{const e=document.getElementById(id);return e?e.value:fallback};
  orderForm={
@@ -1053,7 +1053,7 @@ function updateUserBadge(){
   });
  });
 }
-function openAccount(){if(!authUser)return;document.getElementById("accountName").value=currentUser||"";document.getElementById("accountEmail").value=authUser.email||"";document.getElementById("accountElectroId").value=electroId||"";document.getElementById("accountIdText").textContent=electroId||"MY ELECTRO";document.getElementById("accountMessage").textContent="";document.getElementById("accountModal").style.display="flex"}
+function openAccount(){if(!authUser){alert("Тестовый режим без аккаунта. Изменения сохраняются только в этом браузере и не передаются в облако.");return;}document.getElementById("accountName").value=currentUser||"";document.getElementById("accountEmail").value=authUser.email||"";document.getElementById("accountElectroId").value=electroId||"";document.getElementById("accountIdText").textContent=electroId||"MY ELECTRO";document.getElementById("accountMessage").textContent="";document.getElementById("accountModal").style.display="flex"}
 function closeAccount(){document.getElementById("accountModal").style.display="none"}
 async function saveAccountChanges(){if(!authUser)return;const name=String(document.getElementById("accountName").value||"").trim();const msg=document.getElementById("accountMessage");if(name.length<2){msg.textContent="Введите имя — минимум 2 символа";msg.style.color="#ef4444";return}msg.textContent="Сохраняем…";msg.style.color="#aab2b9";const {error}=await sb.from("profiles").update({name,updated_at:new Date().toISOString()}).eq("id",authUser.id);if(error){msg.textContent="Не удалось сохранить: "+error.message;msg.style.color="#ef4444";return}await sb.auth.updateUser({data:{name}});currentUser=name;localStorage.setItem(APP_USER_KEY,currentUser);updateUserBadge();msg.textContent="Изменения сохранены";msg.style.color="#22c55e";setTimeout(closeAccount,700)}
 async function enterApp(user){
@@ -1065,7 +1065,7 @@ async function enterApp(user){
 async function loadCloudState(){
  if(!authUser)return;const {data,error}=await sb.from("user_data").select("price,estimate,orders,order_form,updated_at").eq("user_id",authUser.id).single();if(error){console.error(error);return}
  const hasCloud=Array.isArray(data?.price)&&data.price.length>0;
- if(hasCloud){price=data.price;estimate=Array.isArray(data.estimate)?data.estimate:[];ordersList=Array.isArray(data.orders)?data.orders:[];orderForm=data.order_form&&typeof data.order_form==="object"?data.order_form:{};ensureCustomSection();localStorage.setItem(ukey("price"),JSON.stringify(price));localStorage.setItem(ukey("estimate"),JSON.stringify(estimate));localStorage.setItem(ukey("orders"),JSON.stringify(ordersList));localStorage.setItem(ukey("order_form"),JSON.stringify(orderForm));}
+ if(hasCloud){price=data.price;estimate=Array.isArray(data.estimate)?data.estimate:[];ordersList=Array.isArray(data.orders)?data.orders:[];orderForm=data.order_form&&typeof data.order_form==="object"?data.order_form:{};ensureCustomSection();ensureShieldSections();ensureFullShieldPrices();ensureAVRPrices();ensureMasterContactorPrices();ensureUnifiedContactorPrices();localStorage.setItem(ukey("price"),JSON.stringify(price));localStorage.setItem(ukey("estimate"),JSON.stringify(estimate));localStorage.setItem(ukey("orders"),JSON.stringify(ordersList));localStorage.setItem(ukey("order_form"),JSON.stringify(orderForm));}
  else await saveCloudState(true);
 }
 function scheduleCloudSave(){if(!authUser)return;clearTimeout(cloudTimer);cloudTimer=setTimeout(()=>saveCloudState(false),700)}
@@ -1073,10 +1073,10 @@ async function saveCloudState(force=false){
  if(!authUser||cloudBusy)return;cloudBusy=true;const payload={user_id:authUser.id,price,estimate,orders:ordersList,order_form:orderForm,updated_at:new Date().toISOString()};
  const {error}=await sb.from("user_data").update(payload).eq("user_id",authUser.id);cloudBusy=false;if(error){console.error("MY ELECTRO cloud save:",error);if(force)alert("Не удалось сохранить данные в облако: "+error.message)}
 }
-const navItems=[["⌂","Главная"],["₽","Прайс"],["▦","Калькулятор"],["▤","Сметы"]];
+const navItems=[["🏠","Главная"],["📋","Прайс"],["🧮","Калькулятор"],["⚡","Щитовая"],["🧾","Сметы"]];
 document.getElementById("nav").innerHTML=navItems.map(x=>{const page=x[1]==="Сметы"?"Сметы и заказы":x[1];return `<button onclick="go('${page}')" id="n-${page}"><span class="nav-icon">${x[0]}</span><span class="nav-label">${x[1]}</span></button>`}).join("");
 
-const APP_VERSION="2026.09.30.26";
+const APP_VERSION="2026.10.02.52";
 const VERSION_URL="./version.json";
 let updateCheckBusy=false;
 let updateLatest="";
@@ -1146,6 +1146,79 @@ window.addEventListener("pageshow",()=>setTimeout(checkForAppUpdate,250));
 window.addEventListener("online",()=>setTimeout(checkForAppUpdate,250));
 
 const CUSTOM_SECTION="СВОЯ РАБОТА";
+const SHIELD_SECTIONS=[{"name":"Щитовая · Установка щитов","items":[["Установка щита · накладной — 12 модулей","шт",1800],["Установка щита · накладной — 18 модулей","шт",1800],["Установка щита · накладной — 24 модуля","шт",1800],["Установка щита · накладной — 36 модулей","шт",1800],["Установка щита · накладной — 48 модулей","шт",1800],["Установка щита · накладной — 54 модуля","шт",1800],["Установка щита · накладной — 72 модуля","шт",1800],["Установка щита · накладной — 96 модулей","шт",1800],["Установка щита · накладной — 120 модулей","шт",1800],["Установка щита · накладной — 144 модуля","шт",1800],["Установка щита · встраиваемый — 12 модулей","шт",1800],["Установка щита · встраиваемый — 18 модулей","шт",1800],["Установка щита · встраиваемый — 24 модуля","шт",1800],["Установка щита · встраиваемый — 36 модулей","шт",1800],["Установка щита · встраиваемый — 48 модулей","шт",1800],["Установка щита · встраиваемый — 54 модуля","шт",1800],["Установка щита · встраиваемый — 72 модуля","шт",1800],["Установка щита · встраиваемый — 96 модулей","шт",1800],["Установка щита · встраиваемый — 120 модулей","шт",1800],["Установка щита · встраиваемый — 144 модуля","шт",1800],["Установка наружного ВРУ","шт",4000]]},{"name":"Щитовая · Сборка электрощита","items":[["Автомат 1P — B6","шт",500],["Автомат 1P — B10","шт",500],["Автомат 1P — B16","шт",500],["Автомат 1P — B20","шт",500],["Автомат 1P — B25","шт",500],["Автомат 1P — B32","шт",500],["Автомат 1P — B40","шт",500],["Автомат 1P — B50","шт",500],["Автомат 1P — B63","шт",500],["Автомат 1P — C6","шт",500],["Автомат 1P — C10","шт",500],["Автомат 1P — C16","шт",500],["Автомат 1P — C20","шт",500],["Автомат 1P — C25","шт",500],["Автомат 1P — C32","шт",500],["Автомат 1P — C40","шт",500],["Автомат 1P — C50","шт",500],["Автомат 1P — C63","шт",500],["Автомат 1P — D6","шт",500],["Автомат 1P — D10","шт",500],["Автомат 1P — D16","шт",500],["Автомат 1P — D20","шт",500],["Автомат 1P — D25","шт",500],["Автомат 1P — D32","шт",500],["Автомат 1P — D40","шт",500],["Автомат 1P — D50","шт",500],["Автомат 1P — D63","шт",500],["Автомат 2P — B6","шт",0],["Автомат 2P — B10","шт",0],["Автомат 2P — B16","шт",0],["Автомат 2P — B20","шт",0],["Автомат 2P — B25","шт",0],["Автомат 2P — B32","шт",0],["Автомат 2P — B40","шт",0],["Автомат 2P — B50","шт",0],["Автомат 2P — B63","шт",0],["Автомат 2P — C6","шт",0],["Автомат 2P — C10","шт",0],["Автомат 2P — C16","шт",0],["Автомат 2P — C20","шт",0],["Автомат 2P — C25","шт",0],["Автомат 2P — C32","шт",0],["Автомат 2P — C40","шт",0],["Автомат 2P — C50","шт",0],["Автомат 2P — C63","шт",0],["Автомат 2P — D6","шт",0],["Автомат 2P — D10","шт",0],["Автомат 2P — D16","шт",0],["Автомат 2P — D20","шт",0],["Автомат 2P — D25","шт",0],["Автомат 2P — D32","шт",0],["Автомат 2P — D40","шт",0],["Автомат 2P — D50","шт",0],["Автомат 2P — D63","шт",0],["Автомат 3P — B6","шт",0],["Автомат 3P — B10","шт",0],["Автомат 3P — B16","шт",0],["Автомат 3P — B20","шт",0],["Автомат 3P — B25","шт",0],["Автомат 3P — B32","шт",0],["Автомат 3P — B40","шт",0],["Автомат 3P — B50","шт",0],["Автомат 3P — B63","шт",0],["Автомат 3P — C6","шт",0],["Автомат 3P — C10","шт",0],["Автомат 3P — C16","шт",0],["Автомат 3P — C20","шт",0],["Автомат 3P — C25","шт",0],["Автомат 3P — C32","шт",0],["Автомат 3P — C40","шт",0],["Автомат 3P — C50","шт",0],["Автомат 3P — C63","шт",0],["Автомат 3P — D6","шт",0],["Автомат 3P — D10","шт",0],["Автомат 3P — D16","шт",0],["Автомат 3P — D20","шт",0],["Автомат 3P — D25","шт",0],["Автомат 3P — D32","шт",0],["Автомат 3P — D40","шт",0],["Автомат 3P — D50","шт",0],["Автомат 3P — D63","шт",0],["Автомат 4P — B6","шт",0],["Автомат 4P — B10","шт",0],["Автомат 4P — B16","шт",0],["Автомат 4P — B20","шт",0],["Автомат 4P — B25","шт",0],["Автомат 4P — B32","шт",0],["Автомат 4P — B40","шт",0],["Автомат 4P — B50","шт",0],["Автомат 4P — B63","шт",0],["Автомат 4P — C6","шт",0],["Автомат 4P — C10","шт",0],["Автомат 4P — C16","шт",0],["Автомат 4P — C20","шт",0],["Автомат 4P — C25","шт",0],["Автомат 4P — C32","шт",0],["Автомат 4P — C40","шт",0],["Автомат 4P — C50","шт",0],["Автомат 4P — C63","шт",0],["УЗО 2P — 25 А / 30 мА / A","шт",1500],["УЗО 2P — 40 А / 30 мА / A","шт",1500],["УЗО 2P — 63 А / 30 мА / A","шт",1500],["УЗО 2P — 40 А / 100 мА / A","шт",1500],["УЗО 2P — 63 А / 100 мА / A","шт",1500],["УЗО 2P — 40 А / 30 мА / AC","шт",1500],["УЗО 4P — 40 А / 30 мА / A","шт",2000],["УЗО 4P — 63 А / 30 мА / A","шт",2000],["УЗО 4P — 63 А / 100 мА / A","шт",2000],["Дифавтомат 1P+N — C10 / 30 мА / A","шт",0],["Дифавтомат 1P+N — C16 / 30 мА / A","шт",0],["Дифавтомат 1P+N — C20 / 30 мА / A","шт",0],["Дифавтомат 1P+N — C25 / 30 мА / A","шт",0],["Дифавтомат 1P+N — C32 / 30 мА / A","шт",0],["Дифавтомат 3P+N — C16 / 30 мА / A","шт",0],["Дифавтомат 3P+N — C25 / 30 мА / A","шт",0],["Дифавтомат 3P+N — C32 / 30 мА / A","шт",0],["Реле напряжения 1-фазное — 16 А","шт",1500],["Реле напряжения 1-фазное — 25 А","шт",1500],["Реле напряжения 1-фазное — 32 А","шт",1500],["Реле напряжения 1-фазное — 40 А","шт",1500],["Реле напряжения 1-фазное — 63 А","шт",1500],["Реле напряжения 3-фазное — 40 А","шт",2000],["Реле напряжения 3-фазное — 63 А","шт",2000],["Реле контроля фаз — 1 модуль","шт",2500],["Реле контроля фаз — 2 модуля","шт",2500],["Реле контроля фаз — 3 модуля","шт",2500],["Реле времени — 1 модуль","шт",2000],["Реле времени — 2 модуля","шт",2000],["Модульный контактор 2P — 16 А","шт",2000],["Модульный контактор 2P — 20 А","шт",2000],["Модульный контактор 2P — 25 А","шт",2000],["Модульный контактор 2P — 40 А","шт",2000],["Модульный контактор 2P — 63 А","шт",2000],["Модульный контактор 4P — 16 А","шт",2500],["Модульный контактор 4P — 25 А","шт",2500],["Модульный контактор 4P — 40 А","шт",2500],["Модульный контактор 4P — 63 А","шт",2500],["Силовой контактор 3P — 9 А","шт",0],["Силовой контактор 3P — 12 А","шт",0],["Силовой контактор 3P — 18 А","шт",0],["Силовой контактор 3P — 25 А","шт",0],["Силовой контактор 3P — 32 А","шт",0],["Силовой контактор 3P — 40 А","шт",0],["Силовой контактор 3P — 65 А","шт",0],["Контактор мастер-выключателя — 2P / 25 А","шт",0],["Контактор мастер-выключателя — 2P / 40 А","шт",0],["Контактор мастер-выключателя — 2P / 63 А","шт",0],["Контактор мастер-выключателя — 4P / 40 А","шт",0],["Контактор мастер-выключателя — 4P / 63 А","шт",0],["DIN-рейка","шт",0],["DIN-рейка — 2 шт","шт",0],["DIN-рейка — 3 шт","шт",0],["Шина N","шт",800],["Шина N — 2 шт","шт",800],["Шина N — 3 шт","шт",800],["Шина PE","шт",0],["Шина PE — 2 шт","шт",0],["Шина PE — 3 шт","шт",0],["Распределительный блок","шт",1000],["Распределительный блок — 2 шт","шт",1000],["Распределительный блок — 3 шт","шт",1000],["Маркировка — 1 аппарат","шт",0],["Маркировка — Весь щит","шт",0],["Проверка щита — До 36 модулей","шт",0],["Проверка щита — 37–72 модуля","шт",0],["Проверка щита — 73–144 модуля","шт",0],["Ввод под напряжением","шт",1500],["Счётчик однофазный","шт",2800],["Счётчик трёхфазный","шт",3700],["Реле выбора фаз","шт",3500],["Распределительный блок до 400 А","шт",1800],["Розетка на DIN-рейку","шт",300],["Кросс-модуль — 2-рядный","шт",1200],["Кросс-модуль — 3-рядный","шт",1700],["Кросс-модуль — 4-рядный","шт",2200],["Контактор 2NO 2NC","шт",3000],["Импульсное реле 2P","шт",1500],["Импульсное реле 4P","шт",2000],["Астрономическое реле","шт",2500],["УЗИП однофазный","шт",2500],["УЗИП трёхфазный","шт",3500],["Гермоввод","шт",300],["Техническое отверстие под кулер","шт",1500],["Техническое отверстие — до 24 мм","шт",800],["Техническое отверстие — до 36 мм","шт",1000],["Распределительный блок до 150 А","шт",1000],["Магнитный пускатель до 63 А","шт",2500],["Магнитный пускатель до 160 А","шт",3500],["Магнитный пускатель до 250 А","шт",4500],["Магнитный пускатель до 400 А","шт",5000],["Магнитный пускатель до 630 А","шт",5500],["Шина нулевая до 125 А","шт",800],["Промежуточное реле","шт",3000],["Розетка наружная","шт",500],["Блок питания на DIN-рейку 12–36 V","шт",1000],["Термореле","шт",1000],["Кулер","шт",1000],["Фильтр решётки притока","шт",300],["Концевик","шт",700],["Кнопка пуск-стоп","шт",800],["Держатель предохранителей 1Ф","шт",2500],["Держатель предохранителей 3Ф","шт",3500]]},{"name":"Щитовая · Ниша под щит","items":[["Ниша под щит · ГВЛ — 12 модулей (работа: 180 ₽/модуль)","шт",2160],["Ниша под щит · ГВЛ — 18 модулей (работа: 180 ₽/модуль)","шт",3240],["Ниша под щит · ГВЛ — 24 модуля (работа: 180 ₽/модуль)","шт",4320],["Ниша под щит · ГВЛ — 36 модулей (работа: 180 ₽/модуль)","шт",6480],["Ниша под щит · ГВЛ — 48 модулей (работа: 180 ₽/модуль)","шт",8640],["Ниша под щит · ГВЛ — 54 модуля (работа: 180 ₽/модуль)","шт",9720],["Ниша под щит · ГВЛ — 72 модуля (работа: 180 ₽/модуль)","шт",12960],["Ниша под щит · ГВЛ — 96 модулей (работа: 180 ₽/модуль)","шт",17280],["Ниша под щит · ГВЛ — 120 модулей (работа: 180 ₽/модуль)","шт",21600],["Ниша под щит · ГВЛ — 144 модуля (работа: 180 ₽/модуль)","шт",25920],["Ниша под щит · Газоблок — 12 модулей (работа: 230 ₽/модуль)","шт",2760],["Ниша под щит · Газоблок — 18 модулей (работа: 230 ₽/модуль)","шт",4140],["Ниша под щит · Газоблок — 24 модуля (работа: 230 ₽/модуль)","шт",5520],["Ниша под щит · Газоблок — 36 модулей (работа: 230 ₽/модуль)","шт",8280],["Ниша под щит · Газоблок — 48 модулей (работа: 230 ₽/модуль)","шт",11040],["Ниша под щит · Газоблок — 54 модуля (работа: 230 ₽/модуль)","шт",12420],["Ниша под щит · Газоблок — 72 модуля (работа: 230 ₽/модуль)","шт",16560],["Ниша под щит · Газоблок — 96 модулей (работа: 230 ₽/модуль)","шт",22080],["Ниша под щит · Газоблок — 120 модулей (работа: 230 ₽/модуль)","шт",27600],["Ниша под щит · Газоблок — 144 модуля (работа: 230 ₽/модуль)","шт",33120],["Ниша под щит · Кирпич — 12 модулей (работа: 270 ₽/модуль)","шт",3240],["Ниша под щит · Кирпич — 18 модулей (работа: 270 ₽/модуль)","шт",4860],["Ниша под щит · Кирпич — 24 модуля (работа: 270 ₽/модуль)","шт",6480],["Ниша под щит · Кирпич — 36 модулей (работа: 270 ₽/модуль)","шт",9720],["Ниша под щит · Кирпич — 48 модулей (работа: 270 ₽/модуль)","шт",12960],["Ниша под щит · Кирпич — 54 модуля (работа: 270 ₽/модуль)","шт",14580],["Ниша под щит · Кирпич — 72 модуля (работа: 270 ₽/модуль)","шт",19440],["Ниша под щит · Кирпич — 96 модулей (работа: 270 ₽/модуль)","шт",25920],["Ниша под щит · Кирпич — 120 модулей (работа: 270 ₽/модуль)","шт",32400],["Ниша под щит · Кирпич — 144 модуля (работа: 270 ₽/модуль)","шт",38880],["Ниша под щит · Бетон — 12 модулей (работа: 330 ₽/модуль)","шт",3960],["Ниша под щит · Бетон — 18 модулей (работа: 330 ₽/модуль)","шт",5940],["Ниша под щит · Бетон — 24 модуля (работа: 330 ₽/модуль)","шт",7920],["Ниша под щит · Бетон — 36 модулей (работа: 330 ₽/модуль)","шт",11880],["Ниша под щит · Бетон — 48 модулей (работа: 330 ₽/модуль)","шт",15840],["Ниша под щит · Бетон — 54 модуля (работа: 330 ₽/модуль)","шт",17820],["Ниша под щит · Бетон — 72 модуля (работа: 330 ₽/модуль)","шт",23760],["Ниша под щит · Бетон — 96 модулей (работа: 330 ₽/модуль)","шт",31680],["Ниша под щит · Бетон — 120 модулей (работа: 330 ₽/модуль)","шт",39600],["Ниша под щит · Бетон — 144 модуля (работа: 330 ₽/модуль)","шт",47520],["Ниша под щит · Монолит — 12 модулей","шт",0],["Ниша под щит · Монолит — 18 модулей","шт",0],["Ниша под щит · Монолит — 24 модуля","шт",0],["Ниша под щит · Монолит — 36 модулей","шт",0],["Ниша под щит · Монолит — 48 модулей","шт",0],["Ниша под щит · Монолит — 54 модуля","шт",0],["Ниша под щит · Монолит — 72 модуля","шт",0],["Ниша под щит · Монолит — 96 модулей","шт",0],["Ниша под щит · Монолит — 120 модулей","шт",0],["Ниша под щит · Монолит — 144 модуля","шт",0],["Ниша под щит · Панельный дом (плита) — 12 модулей (работа: 400 ₽/модуль)","шт",4800],["Ниша под щит · Панельный дом (плита) — 18 модулей (работа: 400 ₽/модуль)","шт",7200],["Ниша под щит · Панельный дом (плита) — 24 модуля (работа: 400 ₽/модуль)","шт",9600],["Ниша под щит · Панельный дом (плита) — 36 модулей (работа: 400 ₽/модуль)","шт",14400],["Ниша под щит · Панельный дом (плита) — 48 модулей (работа: 400 ₽/модуль)","шт",19200],["Ниша под щит · Панельный дом (плита) — 54 модуля (работа: 400 ₽/модуль)","шт",21600],["Ниша под щит · Панельный дом (плита) — 72 модуля (работа: 400 ₽/модуль)","шт",28800],["Ниша под щит · Панельный дом (плита) — 96 модулей (работа: 400 ₽/модуль)","шт",38400],["Ниша под щит · Панельный дом (плита) — 120 модулей (работа: 400 ₽/модуль)","шт",48000],["Ниша под щит · Панельный дом (плита) — 144 модуля (работа: 400 ₽/модуль)","шт",57600]]}];
+function ensureAVRPrices(){
+ if(!Array.isArray(price))return;
+ const cat=price.find(p=>p.name==="Щитовая · Установка щитов");if(!cat)return;
+ let changed=false;
+ for(const n of [12,18,24,36,48,54,72,96,120,144]){
+  const label="Установка щита · накладной АВР — "+n+" "+(n===24||n===36||n===48||n===54||n===72||n===96?"модуля":"модулей");
+  if(!cat.items.some(x=>x[0]===label)){cat.items.push([label,"шт",0]);changed=true;}
+ }
+ if(changed)savePrice();
+}
+const ORIGINAL_SHIELD_PRICE_ROWS=[["Ввод под напряжением","шт",1500],["Счётчик однофазный","шт",2800],["Счётчик трёхфазный","шт",3700],["ТТ (транмформатор тока) проходной","шт",1000],["ТТ с шиной","шт",1800],["Автомат до 100А 1 модуль","шт",500],["УЗО 1Ф","шт",1500],["УЗО 3Ф","шт",2000],["РВФ (реле выбора фаз)","шт",3500],["Фазаискатель механический","шт",3000],["РКН (реле контроля напряжения) (1фазный)","шт",1500],["РКН (реле контроля напряжения) (3фазный)","шт",2000],["РНПП 302","шт",3500],["РКФ (реле контроля фаз)","шт",2500],["Байпас 1ф","шт",2000],["Байпас 3ф","шт",2500],["МДП 1й","шт",600],["МДП 2й","шт",1000],["МДП 3й","шт",1500],["Индикатор напряжения (лсм) 1Ф","шт",500],["Индикатор напряжения (лсм) 2Ф","шт",1000],["Индикатор напряжения (лсм) 3Ф","шт",1500],["Вольтамперметр 1Ф","шт",1000],["Вольтамперметр 3Ф","шт",1500],["Шина нулевая до 125А","шт",800],["РБ (распределительный блок) до 150А","шт",1000],["РБ (распределительный блок) до 400А","шт",1800],["Розетка на динрейку","шт",300],["Розетка наружная","шт",500],["Блок питания на дин рейку 12-24-36V","шт",1000],["Вводная клейма","шт",700],["Кросс модуль 2 рядный","шт",1200],["Кросс модуль 3 рядный","шт",1700],["Кросс модуль 4 рядный","шт",2200],["Контактор 2х полюсный (модульный)","шт",2000],["Контактор 4х полюсный (модульный)","шт",2500],["Контактор 2NO 2NC (модульный)","шт",3000],["Промежуточное реле","шт",3000],["Магнитный пускатель до 63А (пром)","шт",2500],["Магнитный пускатель до 160А (пром)","шт",3500],["Магнитный пускатель до 250А (пром)","шт",4500],["Магнитный пускатель до 400А (пром)","шт",5000],["Магнитный пускатель до 630А (пром)","шт",5500],["Магнитный пускатель 2NO 2NC до 125А (пром)","шт",4000],["Доп. Контактор на пром. Контактор","шт",1500],["ВА (пром) до 100А","шт",3000],["ВА (пром) до 160А","шт",3000],["ВА (пром) до 250А","шт",3500],["ВА (пром) до 400А","шт",4500],["ВА (пром) до 630А","шт",7000],["Рубильник до 630А","шт",7500],["Рубильник реверсивный до 630А","шт",8000],["ОМ, РМТ","шт",2000],["Импульсное реле 2х полюсное","шт",1500],["Импульсное реле 4х полюсное","шт",2000],["Астрономическое реле","шт",2500],["Реле времени","шт",2000],["УЗИП (ОПН) 1Ф","шт",2500],["Держатель плавких предохранителей 1Ф","шт",2500],["УЗИП (ОПН) 3Ф","шт",3500],["Держатель плавких предохранителей 3Ф","шт",3500],["Диммер сигнала УЗИП","шт",500],["ПЛК (контролер)","шт",14000],["Частотный преобразователь до 3кВт","шт",8000],["Частотный преобразователь выше 3кВт","шт",14000],["Термо реле","шт",1000],["Куллер","шт",1000],["Фильтр решётки притока","шт",300],["Концевик","шт",700],["Кнопка пуск-стоп","шт",800],["Гермоввод","шт",300],["Техотверстие под куллер в эл.щите","шт",1500],["Техотверстие в щите до 24мм","шт",800],["Техотверстие в щите до 36мм","шт",1000]];
+function ensureUnifiedContactorPrices(){
+ if(!Array.isArray(price))return;
+ const cat=price.find(x=>x.name==='Щитовая · Сборка электрощита');if(!cat)return;
+ let changed=false;
+ for(const item of cat.items){
+  const m=item[0].match(/^Силовой контактор 3P — (\d+) А$/);
+  if(m&&Number(item[2])===0){const amp=Number(m[1]);item[2]=amp<=63?2500:amp<=160?3500:amp<=250?4500:amp<=400?5000:5500;changed=true;}
+ }
+ if(changed)savePrice();
+}
+function ensureMasterContactorPrices(){
+ if(!Array.isArray(price))return;
+ const cat=price.find(c=>c.name==="Щитовая · Сборка электрощита");
+ if(!cat)return;
+ let changed=false;
+ for(const item of cat.items){
+  const m=item[0].match(/^Контактор мастер-выключателя — (2P|4P) \/ (\d+) А$/);
+  if(!m)continue;
+  // Default only: previous demo had 0. Never overwrite a manually edited price.
+  if(Number(item[2])===0){
+   item[2]=m[1]==="2P"?2000:2500;
+   changed=true;
+  }
+ }
+ if(changed)savePrice();
+}
+function ensureFullShieldPrices(){
+ if(!Array.isArray(price))return;
+ const install=price.find(c=>c.name==="Щитовая · Установка щитов");
+ const assembly=price.find(c=>c.name==="Щитовая · Сборка электрощита");
+ const niche=price.find(c=>c.name==="Щитовая · Ниша под щит");
+ if(!install||!assembly||!niche)return;
+ let changed=false;
+ for(const existing of assembly.items){
+  const clean=existing[0].replace(/^Прайс №\d+ · /,"");
+  if(clean!==existing[0]){
+   if(assembly.items.some(other=>other!==existing&&other[0]===clean)){
+    // Keep existing edited record; remove duplicate later if necessary.
+   } else {existing[0]=clean;changed=true;}
+  }
+ }
+ for(const item of ORIGINAL_SHIELD_PRICE_ROWS){
+  if(!assembly.items.some(x=>x[0]===item[0])){assembly.items.push(item.slice());changed=true;}
+ }
+ // The PDF specifies a rate for 1-module breakers, not for 2P/3P/4P or differential breakers.
+ // Leave unpriced variants at zero until Murad assigns his own price.
+ for(const n of [12,18,24,36,48,54,72,96,120,144]){
+  const suffix=n===24||n===36||n===48||n===54||n===72||n===96?"модуля":"модулей";
+  const name="Установка щита · накладной АВР — "+n+" "+suffix;
+  if(!install.items.some(x=>x[0]===name)){install.items.push([name,"шт",0]);changed=true;}
+ }
+ // Existing demo incorrectly embeds historical rates in the niche name. Correct only labels,
+ // preserving user-edited prices.
+ for(const item of niche.items){
+  const clean=item[0].replace(/ \(работа: \d+ ₽\/модуль\)/,"");
+  if(item[0]!==clean){item[0]=clean;changed=true;}
+ }
+ if(changed)savePrice();
+}
+function ensureShieldSections(){if(!Array.isArray(price))return;let changed=false;for(const cat of SHIELD_SECTIONS){if(!price.some(p=>p.name===cat.name)){price.push(JSON.parse(JSON.stringify(cat)));changed=true;}}if(changed)savePrice();}
+
 function ensureCustomSection(){
   if(!Array.isArray(price))return;
   const idx=price.findIndex(c=>c.name===CUSTOM_SECTION);
@@ -1175,11 +1248,48 @@ function loadPrice(){
 }
 function savePrice(){localStorage.setItem(ukey("price"),JSON.stringify(price));scheduleCloudSave()}
 function saveEstimate(){localStorage.setItem(ukey("estimate"),JSON.stringify(estimate));scheduleCloudSave()}
-function go(page){current=page;currentCat=null;document.querySelectorAll(".nav button").forEach(b=>b.classList.remove("active"));const navBtn=document.getElementById("n-"+page);if(navBtn)navBtn.classList.add("active");render()}
-function render(){document.getElementById("title").textContent=current;const c=document.getElementById("content");
- if(current==="Главная")return home(c); if(current==="Прайс")return pricePage(c); if(current==="Калькулятор")return calc(c);
+// Unified navigation shared by all pages and nested sections.
+const pageHistory=[];
+function navSnapshot(){return {page:current,cat:currentCat};}
+function restorePage(state){
+ current=state.page;currentCat=state.cat;
+ document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active',b.id==='n-'+current));
+ render();
+}
+function go(page){
+ if(current!==page||currentCat!==null)pageHistory.push(navSnapshot());
+ restorePage({page,cat:null});
+}
+function goBack(){
+ if(currentCat!==null){
+  if(current==='Щитовая'){restorePage({page:'Щитовая',cat:null});return;}
+  if(current==='Прайс'){restorePage({page:'Прайс',cat:null});return;}
+ }
+ while(pageHistory.length){
+  const prev=pageHistory.pop();
+  if(prev.page!==current||prev.cat!==currentCat){restorePage(prev);return;}
+ }
+ if(current!=='Главная')restorePage({page:'Главная',cat:null});
+}
+function ensureBackButton(){
+ const c=document.getElementById('content');if(!c)return;
+ const previous=c.querySelector('#unifiedBack');if(previous)previous.remove();
+ // Remove obsolete per-page back buttons; the unified control always uses the same navigation.
+ c.querySelectorAll('button').forEach(b=>{
+  if(/^\s*←/.test(b.textContent||'')&&(/backToShield|currentCat=null|go\('Главная'\)/.test(b.getAttribute('onclick')||'')))b.remove();
+ });
+ if(current==='Главная'&&currentCat===null)return;
+ const bar=document.createElement('div');bar.id='unifiedBack';bar.className='actions no-print';
+ bar.style.cssText='margin:0 0 12px;display:flex;align-items:center';
+ const b=document.createElement('button');b.className='btn secondary';b.type='button';
+ b.textContent='← Назад';b.onclick=goBack;bar.appendChild(b);c.prepend(bar);
+}
+
+function render(){document.getElementById("title").textContent=current;const c=document.getElementById("content");try{
+ if(current==="Главная")return home(c); if(current==="Прайс")return pricePage(c); if(current==="Калькулятор")return calc(c); if(current==="Щитовая")return (currentCat===null||currentCat===-2)?shieldLanding(c):items(c);
  if(current==="Сметы и заказы")return orders(c); if(current==="Архив заказов")return archive(c);
  if(current==="Управление прайсом")return editor(c);
+}finally{ensureBackButton();}
 }
 function home(c){
  c.innerHTML=`
@@ -1210,19 +1320,426 @@ function priceLiveTotal(){
  return `<div class="price-live-total no-print" onclick="go('Сметы и заказы')" title="Открыть смету"><div><div class="plt-label">Итого в смете</div><div class="plt-sum">${money(total)} ₽</div></div><div class="plt-count">${count} шт.</div></div>`;
 }
 function pricePage(c){
- if(currentCat!==null)return items(c);
+ if(currentCat===-2)return shieldLanding(c); if(currentCat!==null)return items(c);
  c.innerHTML=`<div class="actions no-print"><input class="search" style="max-width:500px" placeholder="Поиск по разделам..." oninput="filterCats(this.value)"></div>
- <div class="catgrid" id="cats">${price.map((x,i)=>`<div class="cat ${x.name===CUSTOM_SECTION?'custom-work':''}" data-name="${esc(x.name).toLowerCase()}" onclick="openCat(${i})"><b>${x.name===CUSTOM_SECTION?'✨ ':''}${i+1}. ${esc(x.name)}</b><span class="muted">${x.items.length} позиций${x.name===CUSTOM_SECTION?' · добавить свою услугу':''}</span></div>`).join("")}</div> ${priceLiveTotal()}`;
+ <div class="catgrid" id="cats">${price.map((x,i)=>x.name.startsWith("Щитовая · ")?"":`<div class="cat ${x.name===CUSTOM_SECTION?'custom-work':''}" data-name="${esc(x.name).toLowerCase()}" onclick="openCat(${i})"><b>${x.name===CUSTOM_SECTION?'✨ ':''}${i+1}. ${esc(x.name)}</b><span class="muted">${x.items.length} позиций${x.name===CUSTOM_SECTION?' · добавить свою услугу':''}</span></div>`).join("")}</div> ${priceLiveTotal()}`;
 }
+function backToShield(){restorePage({page:"Щитовая",cat:null});}
+function shieldLanding(c){c.innerHTML=`<div class="actions"><button class="btn secondary" onclick="go('Главная')">← Главная</button></div><h2>⚡ Щитовая</h2><p class="muted">Выбери вид работ. Все цены можно изменить через «Управление прайсом».</p><div class="catgrid">${SHIELD_SECTIONS.map(x=>{let i=price.findIndex(p=>p.name===x.name);return i<0?"":`<div class="cat" onclick="openCat(${i})"><b>${esc(x.name.replace("Щитовая · ",""))}</b><span class="muted">${price[i].items.length} позиций</span></div>`}).join("")}</div> ${priceLiveTotal()}`;}
 function filterCats(v){document.querySelectorAll(".cat").forEach(e=>e.style.display=e.dataset.name.includes(v.toLowerCase())?"block":"none")}
-function openCat(i){currentCat=i;render()}
+function openCat(i){if(currentCat!==i)pageHistory.push(navSnapshot());currentCat=i;render()}
 function items(c){
  const cat=price[currentCat];
  const custom=cat.name===CUSTOM_SECTION;
+ if(cat.name==="Щитовая · Установка щитов")return shieldInstallation(c,cat);
+ if(cat.name==="Щитовая · Ниша под щит")return shieldNiche(c,cat);
+ if(cat.name==="Щитовая · Сборка электрощита")return shieldAssembly(c,cat);
+ if(cat.name.startsWith("Щитовая · "))return shieldItems(c,cat);
  c.innerHTML=`<div class="actions no-print"><button class="btn secondary" onclick="currentCat=null;render()">← Все разделы</button><input class="search" style="max-width:360px" placeholder="Поиск по услугам..." oninput="filterItems(this.value)"></div>
  ${custom?`<div class="custom-add no-print"><h3>✨ Добавить свою работу</h3><div class="custom-fields"><label>Название работы<input id="customName" placeholder="Например: монтаж датчика"></label><label>Ед. измерения<input id="customUnit" value="шт" placeholder="шт"></label><label>Цена, ₽<input id="customPrice" type="number" min="0" inputmode="decimal" placeholder="0"></label><button class="btn custom-save" onclick="addCustomWork()">＋ Добавить работу</button></div></div>`:''}
  <div class="card" style="margin-top:14px"><div class="section-head"><div class="section-title ${custom?'custom-work-head':''}">${custom?'✨ ':''}${currentCat+1}. ${esc(cat.name)}</div><span class="muted">${cat.items.length} позиций</span></div>
  <div id="items">${cat.items.length?cat.items.map((x,i)=>`<div class="price-item" data-name="${esc(x[0]).toLowerCase()}"><div><b>${esc(x[0])}</b></div><div>${esc(x[1])}</div><div>${money(x[2])} ₽</div><div class="item-actions"><div class="qty-stepper"><button onclick="changePriceQty(${currentCat},${i},-1)" aria-label="Уменьшить">−</button><input class="qnum qty-direct" type="number" min="0" step="1" inputmode="numeric" value="${getPriceQty(currentCat,i)}" onchange="setPriceQty(${currentCat},${i},this.value)" onfocus="this.select()" aria-label="Количество"><button class="plus" onclick="changePriceQty(${currentCat},${i},1)" aria-label="Увеличить">+</button></div></div></div>`).join(""):`<div class="empty">Добавь первую свою работу выше.</div>`}</div></div> ${priceLiveTotal()}`;
+}
+function shieldInstallation(c,cat){
+ c.innerHTML=`<div class="actions no-print"><button class="btn secondary" onclick="backToShield()">← Щитовая</button></div>
+ <h2>Установка щитов</h2>
+ <div class="card"><h3>Выбери щит</h3>
+ <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:14px">
+ <button type="button" class="btn" id="installSurface" onclick="installChooseType('накладной')">Накладной</button>
+ <button type="button" class="btn secondary" id="installRecessed" onclick="installChooseType('встраиваемый')">Встраиваемый</button>
+ <button type="button" class="btn secondary" id="installAVR" onclick="installChooseType('накладной АВР')" style="grid-column:1/-1">Накладной АВР</button></div>
+ <input type="hidden" id="installType" value="накладной"></div>
+ <div class="card" id="installDimensionsCard">
+ <h3>Параметры щита</h3>
+ <div id="installModeRow" style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:14px">
+ <label><input type="radio" name="installMode" value="modules" checked onchange="installModeChanged()"> По модулям</label>
+ <label><input type="radio" name="installMode" value="size" onchange="installModeChanged()"> По размеру</label>
+ </div>
+ <div id="installModulesRow"><label>Количество модулей
+ <select id="installModules" onchange="installSelected()" style="width:100%;padding:14px;font-size:17px;margin-top:7px">
+ ${[12,18,24,36,48,54,72,96,120,144].map(n=>`<option value="${n}">${n} модулей</option>`).join("")}</select></label></div>
+ <div id="installSizeRow" style="display:none">
+ <label>Размер щита (например, 600 × 400 × 200 мм)
+ <input id="installSize" type="text" placeholder="600 × 400 × 200 мм" maxlength="90" style="width:100%;margin-top:7px" oninput="installSelected()"></label>
+ </div></div>
+ <div class="card"><h3>Количество щитов и стоимость</h3>
+ <label>Количество щитов<input id="installQty" type="number" inputmode="numeric" min="1" value="1" style="width:120px;font-size:17px;margin-left:10px" oninput="installSelected()"></label>
+ <div id="installModuleDefaultRow" style="margin-bottom:14px">
+ <label style="display:block">Базовая цена за модуль, ₽
+ <input id="installDefaultModuleRate" type="number" min="0" step="any" inputmode="decimal" value="${getInstallModuleRate()}" style="width:100%;margin-top:8px" oninput="installDefaultRateChanged()"></label>
+ <p class="muted" style="font-size:12px;margin-top:7px">Начальная ставка 150 ₽/модуль — пример, не расценка из присланного PDF. Можешь изменить её здесь.</p></div>
+ <div id="installRateRow" style="margin-bottom:14px">
+ <label style="display:block">Своя цена за 1 модуль, ₽
+ <input id="installModuleRate" type="number" inputmode="decimal" min="0" step="any" placeholder="Например, 150" style="width:100%;margin-top:8px" oninput="installRateChanged('module')"></label>
+ <div class="muted" style="margin-top:8px">Расчёт за 1 щит: <strong id="installModuleSubtotal">—</strong></div></div>
+ <label id="installCustomPriceRow" style="display:none">Своя цена за установку 1 щита по размеру, ₽
+ <input id="installCustomPrice" type="number" inputmode="decimal" min="0" step="any" placeholder="Оставь пустым для цены по прайсу" style="width:100%;margin-top:8px" oninput="installRateChanged('fixed')"></label>
+ <p class="muted" style="font-size:12px;margin-top:8px;display:none" id="installRateHelp">Стоимость установки = цена за модуль × количество модулей.</p>
+ <div style="margin:15px 0"><span class="muted">Итого: </span><strong id="installTotal"></strong></div>
+ <button class="btn" onclick="installAdd()">＋ Добавить в смету</button>
+ <p class="muted" id="installBottomHelp" style="font-size:12px;margin-top:10px">Для накладного щита можно выбрать модули или вписать размер. Своя цена применяется только к выбранной позиции сметы, не меняя общий прайс.</p></div>
+ ${shieldSelectedList(cat)}${priceLiveTotal()}`;
+ installSelected();
+}
+function installMode(){
+ return document.querySelector('input[name="installMode"]:checked')?.value||"modules";
+}
+function installModeChanged(){
+ const size=installMode()==="size";
+ document.getElementById("installModulesRow").style.display=size?"none":"block";
+ document.getElementById("installSizeRow").style.display=size?"block":"none";
+ document.getElementById("installRateRow").style.display=size?"none":"block";
+ document.getElementById("installModuleDefaultRow").style.display=size?"none":"block";
+ document.getElementById("installCustomPriceRow").style.display=size?"block":"none";
+ installSelected();
+}
+function installChooseType(type){
+ document.getElementById("installType").value=type;
+ for(const [id,value] of [["installSurface","накладной"],["installRecessed","встраиваемый"],["installAVR","накладной АВР"]]){
+  document.getElementById(id).className="btn "+(type===value?"":"secondary");
+ }
+ const avr=type==="накладной АВР";
+ document.getElementById("installDimensionsCard").style.display=avr?"none":"block";
+ document.getElementById("installModeRow").style.display=type==="накладной"?"flex":"none";
+ if(type!=="накладной")document.querySelector('input[name="installMode"][value="modules"]').checked=true;
+ installModeChanged();
+ if(avr){
+  document.getElementById("installModuleDefaultRow").style.display="none";
+  document.getElementById("installRateRow").style.display="none";
+  document.getElementById("installCustomPriceRow").style.display="block";
+  document.getElementById("installCustomPriceRow").firstChild.textContent="Своя цена за щит, ₽";
+  document.getElementById("installBottomHelp").style.display="none";
+ }else{
+  document.getElementById("installCustomPriceRow").firstChild.textContent="Своя цена за установку 1 щита по размеру, ₽";
+  document.getElementById("installBottomHelp").style.display="";
+ }
+}
+function installItem(){
+ const type=document.getElementById("installType").value;
+ const modules=Number(document.getElementById("installModules").value);
+ return price[currentCat].items.find(x=>x[0].startsWith("Установка щита · "+type+" — "+modules+" модул"));
+}
+function getInstallModuleRate(){
+ const saved=localStorage.getItem("my_electro_install_module_rate");
+ const n=saved===null?150:Number(saved);
+ return Number.isFinite(n)&&n>=0?n:150;
+}
+function installDefaultRateChanged(){
+ const field=document.getElementById("installDefaultModuleRate");
+ const n=Number(field.value);
+ if(field.value.trim()!==""&&Number.isFinite(n)&&n>=0)
+  localStorage.setItem("my_electro_install_module_rate",String(n));
+ installSelected();
+}
+function installRateChanged(){installSelected();}
+function installSelected(){
+ const type=document.getElementById("installType").value;
+ const avr=type==="накладной АВР";
+ const sized=installMode()==="size"&&type==="накладной";
+ const x=(sized||avr)?null:installItem();
+ const modules=Number(document.getElementById("installModules").value);
+ const moduleInput=document.getElementById("installModuleRate").value.trim();
+ const baseField=document.getElementById("installDefaultModuleRate");
+ const base=baseField.value.trim()===""?getInstallModuleRate():Number(baseField.value);
+ const rate=moduleInput===""?base:Number(moduleInput);
+ const fixedInput=document.getElementById("installCustomPrice").value.trim();
+ const unitPrice=(sized||avr)?(fixedInput===""?NaN:Number(fixedInput)):rate*modules;
+ const count=Math.max(1,Math.floor(Number(document.getElementById("installQty").value)||1));
+ document.getElementById("installModuleSubtotal").textContent=!sized&&!avr&&Number.isFinite(rate)&&rate>=0
+  ?modules+" мод. × "+money(rate)+" ₽ = "+money(unitPrice)+" ₽":"Проверь цену за модуль";
+ document.getElementById("installTotal").textContent=Number.isFinite(unitPrice)&&unitPrice>=0?money(unitPrice*count)+" ₽":sized?"Укажи цену за щит":"Проверь цену";
+}
+function installAdd(){
+ const type=document.getElementById("installType").value;
+ const avr=type==="накладной АВР";
+ const sized=type==="накладной"&&installMode()==="size";
+ const x=(sized||avr)?null:installItem();
+ const size=document.getElementById("installSize").value.trim();
+ if(sized&&!size){alert("Укажи размер накладного щита.");document.getElementById("installSize").focus();return;}
+ const fixedInput=document.getElementById("installCustomPrice").value.trim();
+ const moduleInput=document.getElementById("installModuleRate").value.trim();
+ const baseInput=document.getElementById("installDefaultModuleRate").value.trim();
+ const rate=moduleInput!==""?Number(moduleInput):baseInput!==""?Number(baseInput):getInstallModuleRate();
+ if((sized||avr)&&(fixedInput===""||!Number.isFinite(Number(fixedInput))||Number(fixedInput)<0)){
+  alert("Укажи корректную цену установки щита по размеру.");return;
+ }
+ if(!sized&&!avr&&(!Number.isFinite(rate)||rate<0)){alert("Укажи корректную цену за модуль.");return;}
+ const count=Math.max(1,Math.floor(Number(document.getElementById("installQty").value)||1));
+ const modules=Number(document.getElementById("installModules").value);
+ const unitPrice=(sized||avr)?Number(fixedInput):rate*modules;
+ const name=avr?"Установка щита · накладной АВР"
+  :sized?"Установка щита · накладной — размер "+size
+  :(x?x[0]:"Установка щита · "+type+" — "+modules+" модулей")+" (по "+money(rate)+" ₽/модуль)";
+ const cat=price[currentCat];
+ const existing=estimate.find(e=>e.category===cat.name&&e.name===name&&Number(e.price)===unitPrice);
+ if(existing)existing.qty+=count;
+ else estimate.push({name,unit:"шт",price:unitPrice,qty:count,category:cat.name});
+ saveEstimate();shieldInstallation(document.getElementById("content"),cat);
+}
+function installAddVRU(){
+ const ci=currentCat,x=price[ci].items.find(x=>x[0]==="Установка наружного ВРУ");if(!x)return;
+ const count=Math.max(1,Math.floor(Number(document.getElementById("vruQty").value)||1));
+ const e=findEstimateItem(ci,price[ci].items.indexOf(x));
+ if(e)e.qty+=count;else estimate.push({name:x[0],unit:x[1],price:Number(x[2]),qty:count,category:price[ci].name});
+ saveEstimate();shieldInstallation(document.getElementById("content"),price[ci]);
+}
+
+function shieldNiche(c,cat){
+ const materials=[...new Set(cat.items.map(x=>x[0].split(" — ")[0]))];
+ c.innerHTML=`<div class="actions"><button class="btn secondary" onclick="backToShield()">← Щитовая</button></div><div class="card"><h3>Ниша под щит</h3>
+ <label style="display:block;margin-top:12px">Материал стены<select id="nicheMaterial" onchange="nicheSelected(true)" style="width:100%;padding:12px">${materials.map(m=>`<option value="${esc(m)}">${esc(m.replace('Ниша под щит · ',''))}</option>`).join('')}</select></label>
+ <label style="display:block;margin-top:14px">Количество модулей<select id="nicheModules" onchange="nicheSelected(true)" style="width:100%;padding:12px">${[12,18,24,36,48,54,72,96,120,144].map(n=>`<option value="${n}">${n} модулей</option>`).join('')}</select></label>
+ <label style="display:block;margin-top:14px">Количество ниш<input id="nicheQty" type="number" min="1" value="1" inputmode="numeric" style="width:90px"></label>
+ <p style="margin-top:12px">Стоимость: <strong id="nichePrice"></strong></p><button class="btn" onclick="nicheAdd()">＋ Добавить в смету</button>
+ <p class="muted">Цена за нишу зависит от материала и числа модулей. Её можно изменить в управлении прайсом.</p></div>${shieldSelectedList(cat)}${priceLiveTotal()}`;
+ nicheSelected(false);
+}
+function nicheItem(){const material=document.getElementById('nicheMaterial').value,n=document.getElementById('nicheModules').value;return price[currentCat].items.find(x=>x[0].startsWith(material+' — '+n+' модул'));}
+function nicheSelected(reset){if(reset)document.getElementById('nicheQty').value=1;const x=nicheItem();document.getElementById('nichePrice').textContent=x?money(x[2])+' ₽ за нишу ('+money(x[2]/Number(document.getElementById('nicheModules').value))+' ₽/модуль)':'Цена не задана';}
+function nicheAdd(){const x=nicheItem();if(!x)return;shieldAddNamed(x,document.getElementById('nicheQty').value);shieldNiche(document.getElementById('content'),price[currentCat]);}
+function shieldSelectedList(cat){
+ const selected=estimate.map((e,i)=>({e,i})).filter(x=>x.e.category===cat.name);
+ return `<div class="card"><h3>Добавлено в смету</h3>
+ ${selected.map(({e,i})=>`<div style="padding:12px 0;border-bottom:1px solid #444">
+ <div><b>${esc(e.name.replace(/^Прайс №\d+ · /,""))}</b></div>
+ <div class="muted">${money(e.price)} ₽ × ${e.qty} = <b>${money(e.price*e.qty)} ₽</b></div>
+ <div class="actions" style="margin-top:8px;display:flex;gap:8px;align-items:center">
+ <button class="btn secondary" onclick="shieldChangeQty(${i},-1)" aria-label="Уменьшить">−</button>
+ <input type="number" min="1" value="${e.qty}" style="width:65px;text-align:center" onchange="shieldSetQty(${i},this.value)" aria-label="Количество">
+ <button class="btn secondary" onclick="shieldChangeQty(${i},1)" aria-label="Увеличить">+</button>
+ <button class="btn secondary" onclick="shieldRemove(${i})" style="margin-left:auto">Удалить</button>
+ </div></div>`).join('')||'<p class="muted">Пока ничего не выбрано</p>'}</div>`;
+}
+function shieldRefresh(){
+ const cat=price[currentCat],c=document.getElementById('content');
+ if(cat.name==="Щитовая · Установка щитов")shieldInstallation(c,cat);
+ else if(cat.name==="Щитовая · Ниша под щит")shieldNiche(c,cat);
+ else if(cat.name==="Щитовая · Сборка электрощита")shieldAssembly(c,cat);
+ else shieldItems(c,cat);
+}
+function shieldChangeQty(i,d){
+ if(!estimate[i])return;
+ if(d<0&&estimate[i].qty<=1){estimate.splice(i,1);}
+ else estimate[i].qty=Math.max(1,Number(estimate[i].qty)+d);
+ saveEstimate();shieldRefresh();
+}
+function shieldSetQty(i,v){
+ if(!estimate[i])return;
+ estimate[i].qty=Math.max(1,Math.floor(Number(v)||1));
+ saveEstimate();shieldRefresh();
+}
+function shieldRemove(i){
+ if(!estimate[i])return;
+ estimate.splice(i,1);saveEstimate();shieldRefresh();
+}
+function shieldAddNamed(x,qtyValue){const ci=currentCat,ii=price[ci].items.indexOf(x),count=Math.max(1,Math.floor(Number(qtyValue)||1)),e=findEstimateItem(ci,ii);if(e)e.qty+=count;else estimate.push({name:x[0],unit:x[1],price:Number(x[2]),qty:count,category:price[ci].name});saveEstimate();}
+function assemblyParts(label){
+ const [raw,...rest]=label.split(' — '),spec=rest.join(' — ')||'Стандартный';
+ let family=raw,poles='Не применяется',kind='';
+ if(/^Автомат \dP/.test(raw)){family='Автомат';poles=raw.replace('Автомат ','');}
+ else if(/^УЗО \dP/.test(raw)){family='УЗО';poles=raw.replace('УЗО ','');}
+ else if(/^Дифавтомат /.test(raw)){family='Дифавтомат';poles=raw.replace('Дифавтомат ','');}
+ else if(/^Модульный контактор \dP/.test(raw)){family='Контактор';kind='Модульный';poles=raw.replace('Модульный контактор ','');}
+ else if(/^Силовой контактор \dP/.test(raw)){family='Контактор';kind='Обычный (силовой)';poles=raw.replace('Силовой контактор ','');}
+ else if(raw==='Контактор мастер-выключателя'){
+  const m=spec.match(/^(2P|4P)\s*\/\s*(\d+)\s*А$/);
+  family='Контактор';kind='Модульный (мастер-выключатель)';
+  if(m)return {family,kind,poles:m[1],spec:m[2]};
+ }
+ else if(raw==='Контактор 2NO 2NC'||raw==='Контактор 2х полюсный (модульный)'||raw==='Контактор 4х полюсный (модульный)'||raw==='Контактор 2NO 2NC (модульный)'){
+  family='Контактор';kind='Модульный';poles=raw.includes('2NO')?'2NO 2NC':raw.includes('4х')?'4P':'2P';
+  return {family,kind,poles,spec:'По прайсу'};
+ }
+ else if(/^Магнитный пускатель/.test(raw)){
+  family='Контактор';kind='Обычный (силовой)';poles=raw.includes('2NO 2NC')?'2NO 2NC':'3P';
+  const m=raw.match(/до (\d+)\s*А/);return {family,kind,poles,spec:m?'до '+m[1]:'По прайсу'};
+ }
+ else if(/^УЗО [13]Ф$/i.test(raw)){family='УЗО';poles=raw.match(/[13]Ф/i)[0];return {family,kind,poles,spec:'По прайсу'};}
+ else if(/^Счётчик (однофазный|трёхфазный)$/i.test(raw)){family='Счётчик';poles=raw.includes('одно')?'1Ф':'3Ф';return {family,kind,poles,spec:'По прайсу'};}
+ else if(/^РКН \(реле контроля напряжения\)/.test(raw)){family='Реле контроля напряжения (РКН)';poles=raw.includes('1фазный')?'1Ф':'3Ф';return {family,kind,poles,spec:'По прайсу'};}
+ else if(/^Реле напряжения /.test(raw)){family='Реле контроля напряжения (РКН)';poles=raw.replace('Реле напряжения ','');}
+ else if(/^Байпас [13]ф$/i.test(raw)){family='Байпас';poles=raw.match(/[13]ф/i)[0].toUpperCase();return {family,kind,poles,spec:'По прайсу'};}
+ else if(/^Индикатор напряжения \(лсм\) [123]Ф$/.test(raw)){family='Индикатор напряжения';poles=raw.match(/[123]Ф$/)[0];return {family,kind,poles,spec:'По прайсу'};}
+ else if(/^Вольтамперметр [13]Ф$/.test(raw)){family='Вольтамперметр';poles=raw.match(/[13]Ф$/)[0];return {family,kind,poles,spec:'По прайсу'};}
+ else if(/^МДП [123]й$/.test(raw)){family='МДП';poles=raw.match(/[123]/)[0];return {family,kind,poles,spec:'По прайсу'};}
+ else if(/^Кросс модуль [234] рядный$/.test(raw)){family='Кросс-модуль';poles=raw.match(/[234]/)[0]+' ряда';return {family,kind,poles,spec:'По прайсу'};}
+ else if(/^РБ \(распределительный блок\) до \d+А$/.test(raw)){family='Распределительный блок';poles='Не применяется';return {family,kind,poles,spec:raw.match(/до \d+А$/)[0]};}
+ else if(/^УЗИП \(ОПН\) [13]Ф$/.test(raw)){family='УЗИП';poles=raw.match(/[13]Ф$/)[0];return {family,kind,poles,spec:'По прайсу'};}
+ else if(/^Держатель плавких предохранителей [13]Ф$/.test(raw)){family='Держатель плавких предохранителей';poles=raw.match(/[13]Ф$/)[0];return {family,kind,poles,spec:'По прайсу'};}
+ else if(/^Импульсное реле [24]х полюсное$/.test(raw)){family='Импульсное реле';poles=raw.match(/[24]/)[0]+'P';return {family,kind,poles,spec:'По прайсу'};}
+ else if(/^Частотный преобразователь /.test(raw)){family='Частотный преобразователь';return {family,kind,poles:'Не применяется',spec:raw.replace('Частотный преобразователь ','')};}
+ else if(/^ВА \(пром\) до \d+А$/.test(raw)){family='Автомат промышленный (ВА)';return {family,kind,poles:'3Ф',spec:raw.match(/до \d+А$/)[0]};}
+ else if(/^ТТ(?: \(| с |$)/i.test(raw)){
+  family='Трансформатор тока (ТТ)';
+  return {family,kind,poles:'Не применяется',spec:raw.replace(/^ТТ\s*/,'').replace(/^\(|\)$/g,'')||'Стандартный'};
+ }
+ else if(/^Держатель (?:плавких )?предохранителей/i.test(raw)){
+  family='Держатель предохранителей';
+  const m=raw.match(/([1234])\s*[ФP]/i);
+  return {family,kind,poles:m?m[1]+'Ф':'Не указано в прайсе',spec:'По прайсу'};
+ }
+ else if(/^Розетка (?:на динрейку|наружная|на DIN)/i.test(raw)){
+  family='Розетка';
+  return {family,kind,poles:'Не применяется',spec:/наружная/i.test(raw)?'Наружная':'На DIN-рейку'};
+ }
+ else if(/^Шина (?:нулевая|заземления)/i.test(raw)){
+  family='Шина';
+  return {family,kind,poles:'Не применяется',spec:raw.replace(/^Шина\s*/,'')};
+ }
+ else if(/^РБ \(распределительный блок\)/.test(raw)){
+  family='Распределительный блок';
+  return {family,kind,poles:'Не применяется',spec:raw.match(/до \d+А$/)?.[0]||'По прайсу'};
+ }
+ else if(/^Кросс[- ]модуль/i.test(raw)){
+  family='Кросс-модуль';
+  return {family,kind,poles:'Не применяется',spec:raw.match(/[234]\s*рядный/i)?.[0]||spec};
+ }
+ else if(/^МДП [123]й$/.test(raw)){
+  family='МДП';return {family,kind,poles:'Не применяется',spec:raw.match(/[123]/)[0]+'-й'};
+ }
+ else if(/^Индикатор напряжения/i.test(raw)){
+  family='Индикатор напряжения';
+  const m=raw.match(/([123])Ф$/i);
+  return {family,kind,poles:m?m[1]+'Ф':'Не применяется',spec:'По прайсу'};
+ }
+ else if(/^Блок питания на дин рейку/i.test(raw)){
+  family='Блок питания на DIN-рейку';
+  return {family,kind,poles:'Не применяется',spec:raw.replace(/^Блок питания на дин рейку\s*/,'')};
+ }
+ else if(/^Импульсное реле \dP/.test(raw)){family='Импульсное реле';poles=raw.replace('Импульсное реле ','');}
+ 
+ else if(/^УЗИП /.test(raw)){family='УЗИП';poles=raw.replace('УЗИП ','');}
+ return {family,kind,poles,spec};
+}
+function normalizeAssemblyPart(p){
+ const out={...p};
+ const v=String(out.poles||'').trim();
+ const m=v.match(/^(?:([1-4])\s*(?:ф|фаз(?:ный|ное|ная|ных)?|p|полюс(?:ный|ное|ная|ных)?)|(?:одно|тр[её]х|двух)фазн(?:ый|ое|ая))$/i);
+ if(m){const n=m[1]||(v.toLowerCase().startsWith('одно')?'1':v.toLowerCase().startsWith('двух')?'2':'3');out.poles=n+(out.family==='Контактор'||out.family==='Автомат'||out.family==='Дифавтомат'||out.family==='Импульсное реле'?'P':'Ф');}
+ // Make the same family appear only once in the equipment list.
+ if(/^Держатель (?:плавких )?предохранителей$/i.test(out.family))out.family='Держатель предохранителей';
+ if(/^Трансформатор тока(?: \(ТТ\))?$/i.test(out.family))out.family='Трансформатор тока (ТТ)';
+ if(out.family==='Реле контроля напряжения (РКН)'){
+  const z=String(out.poles).match(/^([13])\s*(?:ф|фаз)/i);
+  if(z)out.poles=z[1]+'Ф';
+ }
+ return out;
+}
+function assemblyPart(label){return normalizeAssemblyPart(assemblyParts(label));}
+function assemblyVisibleItem(x){
+ const name=x[0].replace(/^Прайс №\d+ · /,'');
+ return !/^(Маркировка(?: щита)?(?: —|$)|Проверка щита(?: —|$)|Автомат до 100А 1 модуль(?: —|$))/i.test(name);
+}
+function assemblyFamilies(cat){
+ return [...new Set(cat.items.filter(assemblyVisibleItem).map(x=>assemblyPart(x[0]).family))]
+ .sort((a,b)=>a.localeCompare(b,'ru',{sensitivity:'base'}));
+}
+function shieldAssembly(c,cat){
+ const families=assemblyFamilies(cat);
+ c.innerHTML=`<div class="actions"><button class="btn secondary" onclick="backToShield()">← Щитовая</button></div>
+ <div class="card"><h3>Сборка электрощита</h3><p class="muted">Выбирай каждую характеристику отдельно, как в твоём эскизе.</p>
+ <label style="display:block;margin-top:14px"><b>1. Наименование оборудования</b>
+ <input id="assemblySearch" type="search" placeholder="Поиск оборудования..." oninput="assemblyFilterFamilies()" autocomplete="off" style="width:100%;padding:13px;margin-top:6px;margin-bottom:8px" aria-label="Поиск оборудования">
+ <select id="assemblyFamily" onchange="assemblyFamilySelected()" style="width:100%;padding:13px;margin-top:6px">${families.map(k=>`<option value="${esc(k)}">${esc(k)}</option>`).join('')}</select></label>
+ <label id="assemblyKindBox" style="display:none;margin-top:17px"><b>2. Тип контактора</b>
+ <select id="assemblyKind" onchange="assemblyKindSelected()" style="width:100%;padding:13px;margin-top:6px"></select></label>
+ <label style="display:block;margin-top:17px"><b>3. Количество полюсов / исполнение</b>
+ <select id="assemblyPoles" onchange="assemblyPolesSelected()" style="width:100%;padding:13px;margin-top:6px"></select></label>
+ <label style="display:block;margin-top:17px"><b>4. Номинал / исполнение</b>
+ <select id="assemblySpec" onchange="assemblySpecSelected()" style="width:100%;padding:13px;margin-top:6px"></select></label>
+ <label style="display:block;margin-top:17px"><b>5. Количество, шт.</b>
+ <input id="assemblyQty" type="number" min="1" value="1" inputmode="numeric" style="width:120px;margin-top:6px"></label>
+ <p style="margin-top:17px">Стоимость: <strong id="assemblyPrice"></strong></p>
+ <button class="btn" onclick="assemblyAdd()">＋ Добавить в смету</button>
+ <p class="muted">При выборе другого оборудования, полюсов или номинала количество автоматически возвращается к 1. Для позиций без полюсов показывается «Не применяется». Прайс не содержит отдельных расценок на автоматы 2P/3P/4P и дифавтоматы — для них установи собственную цену в редакторе.</p>
+ </div>${shieldSelectedList(cat)}${priceLiveTotal()}`;
+ assemblyFamilySelected();
+}
+function assemblyFilterFamilies(){
+ const input=document.getElementById('assemblySearch');
+ const select=document.getElementById('assemblyFamily');
+ if(!input||!select)return;
+ const term=input.value.trim().toLocaleLowerCase('ru');
+ const families=assemblyFamilies(price[currentCat]);
+ const matches=families.filter(name=>name.toLocaleLowerCase('ru').includes(term));
+ const previous=select.value;
+ select.innerHTML=matches.map(name=>`<option value="${esc(name)}">${esc(name)}</option>`).join('');
+ if(matches.includes(previous))select.value=previous;
+ else if(matches.length)select.value=matches[0];
+ if(matches.length)assemblyFamilySelected();
+ else {
+  document.getElementById('assemblyKindBox').style.display='none';
+  document.getElementById('assemblyPoles').innerHTML='';
+  document.getElementById('assemblySpec').innerHTML='';
+  document.getElementById('assemblyPrice').textContent='Ничего не найдено';
+ }
+}
+function assemblyFamilySelected(){
+ const family=document.getElementById('assemblyFamily').value,box=document.getElementById('assemblyKindBox'),sel=document.getElementById('assemblyKind');
+ const isContactor=family==='Контактор';box.style.display=isContactor?'block':'none';
+ sel.innerHTML=isContactor?[...new Set(price[currentCat].items.filter(assemblyVisibleItem).map(x=>assemblyPart(x[0])).filter(x=>x.family===family).map(x=>x.kind))].map(k=>`<option value="${esc(k)}">${esc(k)}</option>`).join(''):'';
+ document.getElementById('assemblyQty').value=1;assemblyKindSelected();
+}
+function assemblyKindSelected(){
+ const family=document.getElementById('assemblyFamily').value,kind=family==='Контактор'?document.getElementById('assemblyKind').value:'',sel=document.getElementById('assemblyPoles');
+ const poles=[...new Set(price[currentCat].items.map(x=>assemblyPart(x[0])).filter(x=>x.family===family&&x.kind===kind).map(x=>x.poles))];
+ sel.innerHTML=poles.map(p=>`<option value="${esc(p)}">${esc(p)}</option>`).join('');
+ document.getElementById('assemblyQty').value=1;assemblyPolesSelected();
+}
+function assemblyPolesSelected(){
+ const family=document.getElementById('assemblyFamily').value,kind=family==='Контактор'?document.getElementById('assemblyKind').value:'',poles=document.getElementById('assemblyPoles').value,sel=document.getElementById('assemblySpec');
+ const found=price[currentCat].items.map((x,i)=>({x,i,p:assemblyPart(x[0])})).filter(v=>assemblyVisibleItem(v.x)&&v.p.family===family&&v.p.kind===kind&&v.p.poles===poles);
+ // Avoid duplicate specification options from the original price-list entries.
+ const unique=new Map();for(const v of found){
+  const key=v.p.spec==='Стандартный'?'По прайсу':v.p.spec;
+  const prev=unique.get(key);
+  const original=/^(?:Прайс №\d+ · )?(?:РКН \(реле контроля напряжения\)|УЗО [13]Ф|УЗИП \(ОПН\)|Держатель плавких предохранителей)/.test(v.x[0]);
+  if(!prev || (original&&!prev.original) || (!Number(prev.x[2])&&Number(v.x[2])))unique.set(key,{...v,original});
+ }
+ sel.innerHTML=[...unique.values()].map(v=>`<option value="${v.i}">${esc(v.p.spec)}</option>`).join('');
+ document.getElementById('assemblyQty').value=1;assemblySpecSelected();
+}
+function assemblySpecSelected(){
+ document.getElementById('assemblyQty').value=1;
+ const i=document.getElementById('assemblySpec').value;
+ document.getElementById('assemblyPrice').textContent=i!==''?money(price[currentCat].items[Number(i)][2])+' ₽':'Цена не задана';
+}
+function assemblyAdd(){
+ const i=document.getElementById('assemblySpec').value;if(i==='')return;
+ shieldAddNamed(price[currentCat].items[Number(i)],document.getElementById('assemblyQty').value);
+ shieldAssembly(document.getElementById('content'),price[currentCat]);
+}
+
+function shieldItems(c,cat){
+ const ci=currentCat;
+ c.innerHTML=`<div class="actions no-print"><button class="btn secondary" onclick="backToShield()">← Щитовая</button></div>
+ <div class="card"><h3>${esc(cat.name.replace("Щитовая · ",""))}</h3>
+ <label>Поиск позиции<input class="search" id="shieldSearch" placeholder="Например, C16 или контактор" oninput="shieldFilter(this.value)"></label>
+ <label style="display:block;margin-top:12px">Наименование<select id="shieldChoice" onchange="shieldSelected()" style="width:100%;max-width:100%;padding:12px"></select></label>
+ <div class="row" style="margin-top:14px;align-items:end;gap:12px;flex-wrap:wrap">
+ <label>Количество<input id="shieldQty" type="number" inputmode="numeric" min="1" value="1" style="width:85px"></label>
+ <div><div class="muted">Цена за единицу</div><strong id="shieldUnitPrice"></strong></div>
+ </div><div class="actions" style="margin-top:12px"><button class="btn" onclick="shieldAdd()">＋ Добавить в смету</button></div>
+ <p class="muted" style="font-size:12px">При выборе другой позиции количество становится 1. Редактирование цен: «Управление прайсом».</p></div>
+ <div class="card"><h3>Уже выбрано из этого раздела</h3>${estimate.filter(e=>e.category===cat.name).map(e=>`<div style="padding:9px 0;border-bottom:1px solid #444">${esc(e.name.replace(/^Прайс №\d+ · /,""))} — ${e.qty} шт. · ${money(e.price*e.qty)} ₽</div>`).join("")||'<p class="muted">Пока ничего не выбрано</p>'}</div>${priceLiveTotal()}`;
+ shieldFilter("");
+}
+function shieldFilter(term){
+ const ci=currentCat,sel=document.getElementById("shieldChoice");if(!sel)return;
+ const found=price[ci].items.map((x,i)=>({x,i})).filter(v=>v.x[0].toLowerCase().includes(term.toLowerCase()));
+ sel.innerHTML=found.map(v=>`<option value="${v.i}">${esc(v.x[0])}</option>`).join("");
+ shieldSelected();
+}
+function shieldSelected(){
+ const sel=document.getElementById("shieldChoice"),qty=document.getElementById("shieldQty"),unit=document.getElementById("shieldUnitPrice");
+ if(qty)qty.value=1;
+ if(unit)unit.textContent=sel&&sel.value!==""?money(price[currentCat].items[Number(sel.value)][2])+" ₽":"Нет позиций";
+}
+function shieldAdd(){
+ const sel=document.getElementById("shieldChoice"),q=document.getElementById("shieldQty");if(!sel||sel.value==="")return;
+ const ci=currentCat,ii=Number(sel.value),count=Math.max(1,Math.floor(Number(q.value)||1)),x=price[ci].items[ii],e=findEstimateItem(ci,ii);
+ if(e)e.qty+=count;else estimate.push({name:x[0],unit:x[1],price:Number(x[2]),qty:count,category:price[ci].name});
+ saveEstimate();shieldItems(document.getElementById("content"),price[ci]);
 }
 function filterItems(v){document.querySelectorAll("#items .price-item").forEach(e=>e.style.display=e.dataset.name.includes(v.toLowerCase())?"grid":"none")}
 function findEstimateItem(ci,ii){const x=price[ci].items[ii];return estimate.find(e=>e.name===x[0]&&e.unit===x[1]&&Number(e.price)===Number(x[2]));}
@@ -1482,14 +1999,16 @@ function removeSection(i){if(!confirm("Удалить раздел и все е�
 function addItemEditor(ci){const name=prompt("Название услуги:");if(!name||!name.trim())return;const unit=prompt("Единица измерения:","шт");if(!unit||!unit.trim())return;const val=prompt("Цена:","0");const n=Number(val);price[ci].items.push([name.trim(),unit.trim(),isNaN(n)?0:n]);savePrice();render()}
 function editItem(ci,ii,col,val){if(col===2)price[ci].items[ii][col]=Number(val)||0;else price[ci].items[ii][col]=val;savePrice()}
 function removeItem(ci,ii){if(!confirm("Удалить эту услугу?"))return;price[ci].items.splice(ii,1);savePrice();render()}
-function resetPrice(){if(!confirm("Вернуть исходный прайс? Все внесённые вручную изменения будут удалены."))return;price=JSON.parse(JSON.stringify(initialPrice));price.push({name:CUSTOM_SECTION,items:[]});savePrice();render()}
+function resetPrice(){if(!confirm("Вернуть исходный прайс? Все внесённые вручную изменения будут удалены."))return;price=JSON.parse(JSON.stringify(initialPrice));price.push({name:CUSTOM_SECTION,items:[]});ensureShieldSections();ensureFullShieldPrices();ensureMasterContactorPrices();ensureUnifiedContactorPrices();savePrice();render()}
 function money(n){return Number(n||0).toLocaleString("ru-RU")}
 function esc(s){return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
 function attr(s){return esc(s)}
 async function bootApp(){
- document.getElementById("authOverlay").style.display="flex";showAuthMode("login");
- sb.auth.onAuthStateChange((event,session)=>{if(event==="PASSWORD_RECOVERY")setTimeout(finishPasswordRecovery,250);if(event==="SIGNED_OUT"){document.getElementById("authOverlay").style.display="flex"}});
- const {data:{session}}=await sb.auth.getSession();if(session?.user)await enterApp(session.user);else setTimeout(()=>document.getElementById("loginEmail")?.focus(),50);
+ // V31 preview: no account or cloud requests; isolated local demo storage.
+ authUser=null;electroId="";currentUser="Тестовый просмотр";
+ loadUserData();
+ document.getElementById("authOverlay").style.display="none";
+ updateUserBadge();go("Главная");
 }
 bootApp();
 
