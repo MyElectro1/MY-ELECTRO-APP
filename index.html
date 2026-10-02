@@ -1075,7 +1075,7 @@ async function saveCloudState(force=false){
 const navItems=[["🏠","Главная"],["📋","Прайс"],["🧮","Калькулятор"],["⚡","Щитовая"],["🧾","Сметы"]];
 document.getElementById("nav").innerHTML=navItems.map(x=>{const page=x[1]==="Сметы"?"Сметы и заказы":x[1];return `<button onclick="go('${page}')" id="n-${page}"><span class="nav-icon">${x[0]}</span><span class="nav-label">${x[1]}</span></button>`}).join("");
 
-const APP_VERSION="2026.10.02.59";
+const APP_VERSION="2026.10.02.61";
 const VERSION_URL="./version.json";
 let updateCheckBusy=false;
 let updateLatest="";
@@ -1964,10 +1964,65 @@ function objectSaveCurrent(){if(!activeObjectId)return;const all=loadObjects(),o
 function objectNewEstimate(){const o=objectById();if(!o)return;activeObjectEstimateId=null;estimate=[];orderForm={client:o.client||'',master:currentUser||'',phone:o.phone||'',address:o.address||'',date:today(),comment:'',discount:'0'};saveEstimate();localStorage.setItem(ukey('order_form'),JSON.stringify(orderForm));go('Прайс')}
 function objectOpenEstimate(id){const o=objectById(),entry=o?.estimates.find(x=>x.id===id);if(!entry)return;activeObjectEstimateId=id;estimate=JSON.parse(JSON.stringify(entry.items));orderForm={...entry.form};saveEstimate();localStorage.setItem(ukey('order_form'),JSON.stringify(orderForm));go('Сметы и заказы')}
 function objectSelect(id){activeObjectId=id;activeObjectEstimateId=null;render()}
-function objectPhotoAdd(input){const files=Array.from(input.files||[]),id=activeObjectId;if(!files.length)return;let pending=files.length;files.forEach(file=>{if(file.size>750000){alert('Для предварительной версии выбери фотографию меньше 750 КБ: '+file.name);if(!--pending)render();return}const reader=new FileReader();reader.onload=()=>{const all=loadObjects(),o=all.find(x=>x.id===id);if(o){o.photos.push({id:Date.now()+Math.random(),name:file.name,data:reader.result});storeObjects(all)}if(!--pending)render()};reader.onerror=()=>{if(!--pending)render()};reader.readAsDataURL(file)})}
+async function compressObjectPhoto(file){
+ if(!file.type.startsWith('image/'))throw Error('Выбери фотографию');
+ const img=await new Promise((resolve,reject)=>{
+  const im=new Image(),u=URL.createObjectURL(file);
+  im.onload=()=>{URL.revokeObjectURL(u);resolve(im)};
+  im.onerror=()=>{URL.revokeObjectURL(u);reject(Error('Не удалось открыть фотографию'))};
+  im.src=u;
+ });
+ const canvas=document.createElement('canvas'),ctx=canvas.getContext('2d');
+ for(const maxSide of [1440,1100,850,650]){
+  const scale=Math.min(1,maxSide/Math.max(img.naturalWidth,img.naturalHeight));
+  canvas.width=Math.max(1,Math.round(img.naturalWidth*scale));
+  canvas.height=Math.max(1,Math.round(img.naturalHeight*scale));
+  ctx.drawImage(img,0,0,canvas.width,canvas.height);
+  for(const quality of [.8,.65,.5,.35,.24]){
+   const data=canvas.toDataURL('image/jpeg',quality);
+   if(data.startsWith('data:image/jpeg')&&data.length<700000)return data;
+  }
+ }
+ throw Error('Не удалось сжать фотографию. Выбери другой снимок');
+}
+async function objectPhotoAdd(input){
+ const files=Array.from(input.files||[]),id=activeObjectId;if(!files.length)return;
+ input.disabled=true;
+ let added=0;const errors=[];
+ for(const file of files){
+  try{
+   const data=await compressObjectPhoto(file);
+   const all=loadObjects(),o=all.find(x=>x.id===id);if(!o)throw Error('Объект не найден');
+   o.photos.push({id:Date.now()+Math.random(),name:file.name,data});
+   if(!storeObjects(all)||objectMemoryFallback!==null)throw Error('Память браузера заполнена. Фото не сохранено надёжно');
+   added++;
+  }catch(e){errors.push(file.name+': '+(e.message||String(e)))}
+ }
+ input.value='';input.disabled=false;render();
+ if(errors.length)alert('Добавлено: '+added+'. Не удалось добавить:\n'+errors.join('\n')+'\nЕсли память заполнена, не удаляй старые фото до резервного копирования.');
+}
+
 function objectPhotoRemove(id){if(!confirm('Удалить фотографию?'))return;const all=loadObjects(),o=all.find(x=>x.id===activeObjectId);o.photos=o.photos.filter(x=>x.id!==id);storeObjects(all);render()}
+function objectDelete(id){
+ const o=loadObjects().find(x=>String(x.id)===String(id));if(!o)return;
+ const old=document.getElementById('objectDeleteOverlay');if(old)old.remove();
+ const overlay=document.createElement('div');overlay.id='objectDeleteOverlay';
+ overlay.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;padding:18px';
+ overlay.innerHTML='<div class="card" style="max-width:460px;width:100%;background:#202429;border:1px solid #646464"><h2>Удалить объект?</h2><p>Объект «'+esc(o.name)+'», все его сметы и фотографии будут удалены с этого устройства. Это действие нельзя отменить.</p><div class="actions"><button type="button" class="btn danger" id="objectDeleteYes">Удалить объект</button><button type="button" class="btn secondary" id="objectDeleteNo">Отмена</button></div></div>';
+ document.body.appendChild(overlay);
+ document.getElementById('objectDeleteNo').onclick=()=>overlay.remove();
+ document.getElementById('objectDeleteYes').onclick=()=>{
+  const next=loadObjects().filter(x=>String(x.id)!==String(id));
+  try{
+   localStorage.setItem(objectsStorageKey(),JSON.stringify(next));
+   objectMemoryFallback=null;
+   if(String(activeObjectId)===String(id)){activeObjectId=null;activeObjectEstimateId=null}
+   overlay.remove();render();
+  }catch(e){alert('Не удалось удалить объект: '+(e.message||String(e)))}
+ };
+}
 function objectDeleteEstimate(id){if(!confirm('Удалить эту смету из объекта?'))return;const all=loadObjects(),o=all.find(x=>x.id===activeObjectId);o.estimates=o.estimates.filter(x=>x.id!==id);storeObjects(all);render()}
-function objectsPage(c){const all=loadObjects(),o=objectById();if(!o){c.innerHTML=`<div class="card"><h2>📁 Мои объекты</h2><button class="btn" onclick="newObjectPrompt()">＋ Создать новый объект</button><div style="margin-top:18px">${all.length?all.map(x=>`<div class="archive-item"><div><b>${esc(x.name)}</b><div class="muted">${esc(x.client||'Без имени')} · ${x.estimates.length} смет · ${x.photos.length} фото</div></div><button class="btn secondary" onclick="objectSelect(${x.id})">Открыть →</button></div>`).join(''):'<p class="muted">Пока нет объектов.</p>'}</div></div>`;return}const sum=o.estimates.reduce((total,e)=>total+e.items.reduce((v,i)=>v+Number(i.price||0)*Number(i.qty||1),0)*(1-Number(e.form.discount||0)/100),0);c.innerHTML=`<div class="card"><button class="btn secondary" onclick="activeObjectId=null;render()">← Все объекты</button><h2>📁 ${esc(o.name)}</h2><div class="muted">Заказчик: ${esc(o.client||'—')} · ${esc(o.phone||'—')}</div><div class="muted">Адрес: ${esc(o.address||'—')}</div><h3>Общая сумма: ${money(sum)} ₽</h3><hr><h3>Сметы объекта</h3><div class="actions"><button class="btn" onclick="objectNewEstimate()">＋ Новая смета</button>${estimate.length?'<button class="btn secondary" onclick="objectSaveCurrent()">💾 Сохранить текущую смету в объект</button>':''}</div>${o.estimates.map(e=>`<div class="archive-item"><div><b>${esc(e.title)}</b><div class="muted">${esc(e.saved)}</div></div><div class="actions"><button class="btn secondary" onclick="objectOpenEstimate(${e.id})">✏️ Открыть</button><button class="btn danger" onclick="objectDeleteEstimate(${e.id})">Удалить</button></div></div>`).join('')||'<p class="muted">Добавь первую смету.</p>'}<hr><h3>Фотографии объекта</h3><label class="btn secondary" style="display:inline-block;cursor:pointer">＋ Добавить фото<input type="file" accept="image/*" multiple onchange="objectPhotoAdd(this)" style="display:none"></label><p class="muted">В этой предварительной версии фотографии хранятся только в данном браузере. Размер каждого файла — до 750 КБ. Для надёжного хранения потребуется облачная версия.</p><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px">${o.photos.map(p=>`<div><img src="${p.data}" alt="${esc(p.name)}" style="width:100%;height:130px;object-fit:cover;border-radius:9px"><button class="btn danger" onclick="objectPhotoRemove(${p.id})">Удалить</button></div>`).join('')}</div></div>`}
+function objectsPage(c){const all=loadObjects(),o=objectById();if(!o){c.innerHTML=`<div class="card"><h2>📁 Мои объекты</h2><button class="btn" onclick="newObjectPrompt()">＋ Создать новый объект</button><div style="margin-top:18px">${all.length?all.map(x=>`<div class="archive-item"><div><b>${esc(x.name)}</b><div class="muted">${esc(x.client||'Без имени')} · ${x.estimates.length} смет · ${x.photos.length} фото</div></div><div class="actions"><button class="btn secondary" onclick="objectSelect(${x.id})">Открыть →</button><button class="btn danger" onclick="objectDelete(${x.id})">🗑️ Удалить</button></div></div>`).join(''):'<p class="muted">Пока нет объектов.</p>'}</div></div>`;return}const sum=o.estimates.reduce((total,e)=>total+e.items.reduce((v,i)=>v+Number(i.price||0)*Number(i.qty||1),0)*(1-Number(e.form.discount||0)/100),0);c.innerHTML=`<div class="card"><div class="actions"><button class="btn secondary" onclick="activeObjectId=null;render()">← Все объекты</button><button class="btn secondary" onclick="newObjectPrompt()">＋ Добавить объект</button><button class="btn danger" onclick="objectDelete(activeObjectId)">🗑️ Удалить объект</button></div><h2>📁 ${esc(o.name)}</h2><div class="muted">Заказчик: ${esc(o.client||'—')} · ${esc(o.phone||'—')}</div><div class="muted">Адрес: ${esc(o.address||'—')}</div><h3>Общая сумма: ${money(sum)} ₽</h3><hr><h3>Сметы объекта</h3><div class="actions"><button class="btn" onclick="objectNewEstimate()">＋ Новая смета</button>${estimate.length?'<button class="btn secondary" onclick="objectSaveCurrent()">💾 Сохранить текущую смету в объект</button>':''}</div>${o.estimates.map(e=>`<div class="archive-item"><div><b>${esc(e.title)}</b><div class="muted">${esc(e.saved)}</div></div><div class="actions"><button class="btn secondary" onclick="objectOpenEstimate(${e.id})">✏️ Открыть</button><button class="btn danger" onclick="objectDeleteEstimate(${e.id})">Удалить</button></div></div>`).join('')||'<p class="muted">Добавь первую смету.</p>'}<hr><h3>Фотографии объекта</h3><label class="btn secondary" style="display:inline-block;cursor:pointer">＋ Добавить фото<input type="file" accept="image/*" multiple onchange="objectPhotoAdd(this)" style="display:none"></label><p class="muted">В этой предварительной версии фотографии хранятся только в данном браузере. Размер каждого файла — до 750 КБ. Для надёжного хранения потребуется облачная версия.</p><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px">${o.photos.map(p=>`<div><img src="${p.data}" alt="${esc(p.name)}" style="width:100%;height:130px;object-fit:cover;border-radius:9px"><button class="btn danger" onclick="objectPhotoRemove(${p.id})">Удалить</button></div>`).join('')}</div></div>`}
 function archive(c){c.innerHTML=`<div class="card"><h2>🗂️ Архив</h2><div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(210px,1fr));margin:18px 0"><button class="btn secondary" onclick="showPlainArchive()">🧾 Обычные сметы (${ordersList.length})</button><button class="btn secondary" onclick="go('Мои объекты')">📁 Мои объекты (${loadObjects().length})</button></div><div id="plainArchive"></div></div>`;showPlainArchive()}
 function showPlainArchive(){const el=document.getElementById('plainArchive');if(!el)return;el.innerHTML=`<h3>Обычные сметы</h3>${ordersList.length?ordersList.map((o,i)=>`<div class="archive-item"><div><b>${esc(o.client||"Без имени")}</b><div class="muted">${esc(o.date)} · ${esc(o.phone||"Телефон не указан")}</div><div class="muted">${esc(o.address||"Адрес не указан")}</div></div><div class="archive-right"><b>${money(o.total)} ₽</b><button class="btn secondary no-print" onclick="viewOrder(${i})">✏️ Редактировать</button><button class="btn danger no-print" onclick="deleteOrder(${i})">🗑️ Удалить</button></div></div>`).join(""):`<p class="muted">Обычных смет пока нет.</p>`}`}
 
