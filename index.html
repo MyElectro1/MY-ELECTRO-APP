@@ -1075,7 +1075,7 @@ async function saveCloudState(force=false){
 const navItems=[["🏠","Главная"],["📋","Прайс"],["🧮","Калькулятор"],["⚡","Щитовая"],["🧾","Сметы"]];
 document.getElementById("nav").innerHTML=navItems.map(x=>{const page=x[1]==="Сметы"?"Сметы и заказы":x[1];return `<button onclick="go('${page}')" id="n-${page}"><span class="nav-icon">${x[0]}</span><span class="nav-label">${x[1]}</span></button>`}).join("");
 
-const APP_VERSION="2026.10.02.61";
+const APP_VERSION="2026.10.02.63";
 const VERSION_URL="./version.json";
 let updateCheckBusy=false;
 let updateLatest="";
@@ -2021,11 +2021,80 @@ function objectDelete(id){
   }catch(e){alert('Не удалось удалить объект: '+(e.message||String(e)))}
  };
 }
-function objectDeleteEstimate(id){if(!confirm('Удалить эту смету из объекта?'))return;const all=loadObjects(),o=all.find(x=>x.id===activeObjectId);o.estimates=o.estimates.filter(x=>x.id!==id);storeObjects(all);render()}
+function objectDeleteEstimate(id){
+ const all=loadObjects(),o=all.find(x=>x.id===activeObjectId),entry=o?.estimates.find(x=>x.id===id);
+ if(!entry)return;
+ const moved=!!entry.originalOrder;
+ const msg=moved?'Убрать эту смету из объекта и вернуть её в обычный архив?':'Удалить эту смету из объекта? Это действие нельзя отменить.';
+ if(!confirm(msg))return;
+ if(moved){
+  const restored=JSON.parse(JSON.stringify(entry.originalOrder));
+  if(ordersList.some(x=>String(x.id)===String(restored.id)))restored.id=Date.now()+Math.random();
+  const updated=ordersList.concat([restored]);
+  try{localStorage.setItem(ukey('orders'),JSON.stringify(updated))}
+  catch(e){alert('Не удалось вернуть смету в обычный архив. Смета осталась в объекте.');return}
+  ordersList=updated;scheduleCloudSave();
+ }
+ o.estimates=o.estimates.filter(x=>x.id!==id);
+ try{
+  localStorage.setItem(objectsStorageKey(),JSON.stringify(all));
+  objectMemoryFallback=null;
+ }catch(e){
+  if(moved){
+   ordersList=ordersList.filter(x=>String(x.id)!==String(entry.originalOrder.id));
+   try{localStorage.setItem(ukey('orders'),JSON.stringify(ordersList));scheduleCloudSave()}catch(_){}
+  }
+  alert('Не удалось обновить объект. Проверь свободное место.');return;
+ }
+ render();
+}
 function objectsPage(c){const all=loadObjects(),o=objectById();if(!o){c.innerHTML=`<div class="card"><h2>📁 Мои объекты</h2><button class="btn" onclick="newObjectPrompt()">＋ Создать новый объект</button><div style="margin-top:18px">${all.length?all.map(x=>`<div class="archive-item"><div><b>${esc(x.name)}</b><div class="muted">${esc(x.client||'Без имени')} · ${x.estimates.length} смет · ${x.photos.length} фото</div></div><div class="actions"><button class="btn secondary" onclick="objectSelect(${x.id})">Открыть →</button><button class="btn danger" onclick="objectDelete(${x.id})">🗑️ Удалить</button></div></div>`).join(''):'<p class="muted">Пока нет объектов.</p>'}</div></div>`;return}const sum=o.estimates.reduce((total,e)=>total+e.items.reduce((v,i)=>v+Number(i.price||0)*Number(i.qty||1),0)*(1-Number(e.form.discount||0)/100),0);c.innerHTML=`<div class="card"><div class="actions"><button class="btn secondary" onclick="activeObjectId=null;render()">← Все объекты</button><button class="btn secondary" onclick="newObjectPrompt()">＋ Добавить объект</button><button class="btn danger" onclick="objectDelete(activeObjectId)">🗑️ Удалить объект</button></div><h2>📁 ${esc(o.name)}</h2><div class="muted">Заказчик: ${esc(o.client||'—')} · ${esc(o.phone||'—')}</div><div class="muted">Адрес: ${esc(o.address||'—')}</div><h3>Общая сумма: ${money(sum)} ₽</h3><hr><h3>Сметы объекта</h3><div class="actions"><button class="btn" onclick="objectNewEstimate()">＋ Новая смета</button>${estimate.length?'<button class="btn secondary" onclick="objectSaveCurrent()">💾 Сохранить текущую смету в объект</button>':''}</div>${o.estimates.map(e=>`<div class="archive-item"><div><b>${esc(e.title)}</b><div class="muted">${esc(e.saved)}</div></div><div class="actions"><button class="btn secondary" onclick="objectOpenEstimate(${e.id})">✏️ Открыть</button><button class="btn danger" onclick="objectDeleteEstimate(${e.id})">Удалить</button></div></div>`).join('')||'<p class="muted">Добавь первую смету.</p>'}<hr><h3>Фотографии объекта</h3><label class="btn secondary" style="display:inline-block;cursor:pointer">＋ Добавить фото<input type="file" accept="image/*" multiple onchange="objectPhotoAdd(this)" style="display:none"></label><p class="muted">В этой предварительной версии фотографии хранятся только в данном браузере. Размер каждого файла — до 750 КБ. Для надёжного хранения потребуется облачная версия.</p><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px">${o.photos.map(p=>`<div><img src="${p.data}" alt="${esc(p.name)}" style="width:100%;height:130px;object-fit:cover;border-radius:9px"><button class="btn danger" onclick="objectPhotoRemove(${p.id})">Удалить</button></div>`).join('')}</div></div>`}
 function archive(c){c.innerHTML=`<div class="card"><h2>🗂️ Архив</h2><div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(210px,1fr));margin:18px 0"><button class="btn secondary" onclick="showPlainArchive()">🧾 Обычные сметы (${ordersList.length})</button><button class="btn secondary" onclick="go('Мои объекты')">📁 Мои объекты (${loadObjects().length})</button></div><div id="plainArchive"></div></div>`;showPlainArchive()}
-function showPlainArchive(){const el=document.getElementById('plainArchive');if(!el)return;el.innerHTML=`<h3>Обычные сметы</h3>${ordersList.length?ordersList.map((o,i)=>`<div class="archive-item"><div><b>${esc(o.client||"Без имени")}</b><div class="muted">${esc(o.date)} · ${esc(o.phone||"Телефон не указан")}</div><div class="muted">${esc(o.address||"Адрес не указан")}</div></div><div class="archive-right"><b>${money(o.total)} ₽</b><button class="btn secondary no-print" onclick="viewOrder(${i})">✏️ Редактировать</button><button class="btn danger no-print" onclick="deleteOrder(${i})">🗑️ Удалить</button></div></div>`).join(""):`<p class="muted">Обычных смет пока нет.</p>`}`}
+function showPlainArchive(){const el=document.getElementById('plainArchive');if(!el)return;el.innerHTML=`<h3>Обычные сметы</h3>${ordersList.length?ordersList.map((o,i)=>`<div class="archive-item"><div><b>${esc(o.client||"Без имени")}</b><div class="muted">${esc(o.date)} · ${esc(o.phone||"Телефон не указан")}</div><div class="muted">${esc(o.address||"Адрес не указан")}</div></div><div class="archive-right"><b>${money(o.total)} ₽</b><button class="btn secondary no-print" onclick="viewOrder(${i})">✏️ Редактировать</button><button class="btn secondary no-print" onclick="moveOrderToObject(${i})">📁 В объект</button><button class="btn danger no-print" onclick="deleteOrder(${i})">🗑️ Удалить</button></div></div>`).join(""):`<p class="muted">Обычных смет пока нет.</p>`}`}
 
+function moveOrderToObject(i){
+ const order=ordersList[i];if(!order)return;
+ const all=loadObjects();
+ const old=document.getElementById('moveOrderOverlay');if(old)old.remove();
+ const overlay=document.createElement('div');overlay.id='moveOrderOverlay';
+ overlay.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.86);display:flex;align-items:center;justify-content:center;padding:18px;overflow-y:auto';
+ overlay.innerHTML=`<div class="card" style="width:min(100%,480px);background:#202429;border:1px solid #555">
+ <h2>📁 Перенести смету в объект</h2>
+ <p>Смета: ${esc(order.client||'Без имени')} · ${money(order.total)} ₽</p>
+ <label style="display:block;margin:15px 0">Выбери объект
+ <select id="moveOrderTarget" style="display:block;width:100%;margin-top:8px;padding:12px;border-radius:9px" ${all.length?'':'disabled'}>
+ ${all.map(o=>`<option value="${attr(o.id)}">${esc(o.name)} — ${esc(o.client||'Без заказчика')}</option>`).join('')}
+ </select></label>
+ ${all.length?'':'<p>У тебя ещё нет объектов. Сначала создай объект в разделе «Мои объекты».</p>'}
+ <p class="muted">После успешного переноса смета исчезнет из обычного архива и появится внутри выбранного объекта.</p>
+ <p id="moveOrderError" style="color:#ff9c9c" role="alert"></p>
+ <div class="actions"><button class="btn" id="moveOrderConfirm" ${all.length?'':'disabled'}>Перенести</button><button class="btn secondary" id="moveOrderCancel">Отмена</button></div></div>`;
+ document.body.appendChild(overlay);
+ document.getElementById('moveOrderCancel').onclick=()=>overlay.remove();
+ document.getElementById('moveOrderConfirm').onclick=()=>{
+  const id=document.getElementById('moveOrderTarget').value;
+  const objects=loadObjects(),target=objects.find(o=>String(o.id)===String(id));
+  if(!target){document.getElementById('moveOrderError').textContent='Объект не найден';return}
+  const entry={id:Date.now()+Math.random(),title:order.client?'Смета · '+order.client:'Электромонтажные работы',
+   items:JSON.parse(JSON.stringify(order.items||[])),
+   form:{client:order.client||'',master:order.master||currentUser||'',phone:order.phone||'',address:order.address||'',date:order.date||today(),comment:order.comment||'',discount:order.discount||0},
+   saved:new Date().toLocaleString('ru-RU'),originalOrder:JSON.parse(JSON.stringify(order))};
+  target.estimates=Array.isArray(target.estimates)?target.estimates:[];
+  target.estimates.push(entry);
+  try{
+   localStorage.setItem(objectsStorageKey(),JSON.stringify(objects));
+   objectMemoryFallback=null;
+  }catch(e){document.getElementById('moveOrderError').textContent='Не удалось сохранить в объект: '+(e.message||e);return}
+  const index=ordersList.findIndex(x=>String(x.id)===String(order.id));
+  if(index>=0)ordersList.splice(index,1);
+  if(String(editingOrderId)===String(order.id))editingOrderId=null;
+  try{localStorage.setItem(ukey('orders'),JSON.stringify(ordersList))}
+  catch(e){document.getElementById('moveOrderError').textContent='Смета скопирована в объект, но не удалось обновить обычный архив. Проверь свободное место.';return}
+  scheduleCloudSave();
+  activeObjectId=target.id;activeObjectEstimateId=null;
+  overlay.remove();go('Мои объекты');
+ };
+}
 function viewOrder(i){
  const o=ordersList[i];
  editingOrderId=o.id;
