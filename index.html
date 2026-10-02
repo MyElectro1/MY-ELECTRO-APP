@@ -997,58 +997,7 @@ function saveOrderForm(){
    phone:gv("estimatePhone",orderForm.phone||""),
    address:gv("estimateAddress",orderForm.address||""),
    date:gv("estimateDate",orderForm.date||today()),
-   comment:orderForm.comment||"",
-   discount:gv("estimateDiscount",orderForm.discount||"0")
- };
- localStorage.setItem(ukey("order_form"),JSON.stringify(orderForm));scheduleCloudSave();
-}
-function today(){return new Date().toISOString().slice(0,10)}
-function calcDiscount(sub){let d=Math.max(0,Math.min(100,Number(orderForm.discount||0)));return {pct:d,amount:sub*d/100,total:sub-sub*d/100}}
-const SUPABASE_URL="https://zsibwzizjdikkgjdhuve.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY="sb_publishable_ajyjnwimUWpGE8jnF5GfkA_4t18kK-e";
-const APP_URL="https://myelectro1.github.io/MY-ELECTRO-APP/";
-const sb=supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,storage:window.localStorage}});
-let authUser=null, electroId="", cloudTimer=null, cloudBusy=false;
-function normEmail(v){return String(v||"").trim().toLowerCase()}
-function authMsg(t,ok=false){const e=document.getElementById("authMessage");if(!e)return;e.textContent=t||"";e.style.color=ok?"#22c55e":"#ef4444"}
-function showAuthMode(mode){const l=mode==="login";document.getElementById("loginPane").style.display=l?"block":"none";document.getElementById("registerPane").style.display=l?"none":"block";document.getElementById("loginTab").classList.toggle("active",l);document.getElementById("registerTab").classList.toggle("active",!l);authMsg("")}
-function togglePass(id,b){const e=document.getElementById(id);e.type=e.type==="password"?"text":"password";b.textContent=e.type==="password"?"👁":"🙈"}
-function setAuthBusy(b){document.querySelectorAll("#authOverlay button").forEach(x=>x.disabled=!!b)}
-async function registerAccount(){
- const name=String(document.getElementById("regName").value||"").trim(),email=normEmail(document.getElementById("regEmail").value),pass=String(document.getElementById("regPassword").value||"");
- if(name.length<2)return authMsg("Укажите имя");if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))return authMsg("Укажите корректный email");if(pass.length<8)return authMsg("Пароль — минимум 8 символов");
- setAuthBusy(true);authMsg("Создаём аккаунт…",true);
- const {data,error}=await sb.auth.signUp({email,password:pass,options:{data:{name},emailRedirectTo:APP_URL}});
- setAuthBusy(false);if(error)return authMsg(error.message||"Не удалось создать аккаунт");
- if(data.session){await enterApp(data.user);return}
- showAuthMode("login");document.getElementById("loginEmail").value=email;authMsg("Аккаунт создан. Откройте письмо Supabase и подтвердите email, затем войдите.",true);
-}
-async function loginAccount(){
- const email=normEmail(document.getElementById("loginEmail").value),pass=String(document.getElementById("loginPassword").value||"");if(!email||!pass)return authMsg("Введите email и пароль");
- setAuthBusy(true);authMsg("Входим…",true);const {data,error}=await sb.auth.signInWithPassword({email,password:pass});setAuthBusy(false);
- if(error)return authMsg(error.message==="Email not confirmed"?"Сначала подтвердите email по ссылке из письма.":"Неверный email/пароль или email ещё не подтверждён");
- await enterApp(data.user);
-}
-async function forgotPassword(){
- const email=normEmail(document.getElementById("loginEmail").value);if(!email)return authMsg("Сначала укажите email");setAuthBusy(true);
- const {error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:APP_URL});setAuthBusy(false);if(error)return authMsg(error.message||"Не удалось отправить письмо");authMsg("Письмо для восстановления пароля отправлено на email.",true);
-}
-async function finishPasswordRecovery(){
- const p=prompt("MY ELECTRO — введите новый пароль (минимум 8 символов):");if(p===null)return;if(String(p).length<8){alert("Пароль должен содержать минимум 8 символов");return finishPasswordRecovery()}
- const {error}=await sb.auth.updateUser({password:String(p)});if(error)alert("Не удалось изменить пароль: "+error.message);else alert("Пароль изменён. MY ELECTRO готов к работе.");
-}
-function loginUser(){showAuthMode("login")}
-async function logoutUser(){closeAccount();await saveCloudState(true);await sb.auth.signOut();localStorage.removeItem(APP_USER_KEY);localStorage.removeItem("my_electro_current_account_id_v1");authUser=null;electroId="";currentUser="";document.getElementById("authOverlay").style.display="flex";showAuthMode("login")}
-function updateUserBadge(){
- const b=document.querySelector(".badge");
- if(!b)return;
- b.innerHTML=`<div class="top-quick-actions"><button type="button" class="top-quick-btn" data-top-action="archive" title="Архив заказов" aria-label="Архив заказов">🗂️</button><button type="button" class="top-quick-btn" data-top-action="editor" title="Управление прайсом" aria-label="Управление прайсом">🛠️</button><button type="button" class="account-icon-btn" data-top-action="account" title="Мой аккаунт" aria-label="Мой аккаунт">👤</button></div>`;
- b.querySelectorAll("[data-top-action]").forEach(btn=>{
-  btn.addEventListener("click",e=>{
-   e.preventDefault();e.stopPropagation();
-   const a=btn.dataset.topAction;
-   if(a==="archive")go("Архив заказов");
-   else if(a==="editor")go("Управление прайсом");
+   comment:orderForm.comment||"",   else if(a==="editor")go("Управление прайсом");
    else if(a==="account")openAccount();
   });
  });
@@ -1066,7 +1015,7 @@ async function loadCloudState(){
  if(!authUser)return;const {data,error}=await sb.from("user_data").select("price,estimate,orders,order_form,updated_at").eq("user_id",authUser.id).single();if(error){console.error(error);return}
  const hasCloud=Array.isArray(data?.price)&&data.price.length>0;
  if(hasCloud){price=data.price;estimate=Array.isArray(data.estimate)?data.estimate:[];ordersList=Array.isArray(data.orders)?data.orders:[];orderForm=data.order_form&&typeof data.order_form==="object"?data.order_form:{};ensureCustomSection();ensureShieldSections();ensureInstallModulePrice();ensureFullShieldPrices();ensureAVRPrices();ensureMasterContactorPrices();ensureUnifiedContactorPrices();localStorage.setItem(ukey("price"),JSON.stringify(price));localStorage.setItem(ukey("estimate"),JSON.stringify(estimate));localStorage.setItem(ukey("orders"),JSON.stringify(ordersList));localStorage.setItem(ukey("order_form"),JSON.stringify(orderForm));}
- else await saveCloudState(true);
+ else console.info("MY ELECTRO: облачные данные не найдены; автоматическая перезапись отключена");
 }
 function scheduleCloudSave(){if(!authUser)return;clearTimeout(cloudTimer);cloudTimer=setTimeout(()=>saveCloudState(false),700)}
 async function saveCloudState(force=false){
@@ -1076,7 +1025,7 @@ async function saveCloudState(force=false){
 const navItems=[["🏠","Главная"],["📋","Прайс"],["🧮","Калькулятор"],["⚡","Щитовая"],["🧾","Сметы"]];
 document.getElementById("nav").innerHTML=navItems.map(x=>{const page=x[1]==="Сметы"?"Сметы и заказы":x[1];return `<button onclick="go('${page}')" id="n-${page}"><span class="nav-icon">${x[0]}</span><span class="nav-label">${x[1]}</span></button>`}).join("");
 
-const APP_VERSION="2026.10.02.53";
+const APP_VERSION="2026.10.02.57";
 const VERSION_URL="./version.json";
 let updateCheckBusy=false;
 let updateLatest="";
@@ -2003,11 +1952,17 @@ function money(n){return Number(n||0).toLocaleString("ru-RU")}
 function esc(s){return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
 function attr(s){return esc(s)}
 async function bootApp(){
- // V31 preview: no account or cloud requests; isolated local demo storage.
- authUser=null;electroId="";currentUser="Тестовый просмотр";
- loadUserData();
- document.getElementById("authOverlay").style.display="none";
- updateUserBadge();go("Главная");
+ // Restore existing Supabase session; never replace it with preview mode.
+ const overlay=document.getElementById("authOverlay");
+ overlay.style.display="flex";
+ showAuthMode("login");
+ authMsg("Проверяем сохранённый вход…",true);
+ try{
+  const {data,error}=await sb.auth.getSession();
+  if(error)throw error;
+  if(data?.session?.user){await enterApp(data.session.user);return;}
+  authMsg("Войди в свой существующий аккаунт MY ELECTRO.",true);
+ }catch(e){console.error("MY ELECTRO session restore:",e);authMsg("Не удалось проверить вход. Проверь интернет и войди с прежними данными.")}
 }
 bootApp();
 
