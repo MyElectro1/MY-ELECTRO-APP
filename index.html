@@ -988,7 +988,7 @@ function readJSON(key,fallback){try{const v=JSON.parse(localStorage.getItem(key)
 function migrateLegacy(){if(!currentUser)return;const marker=ukey("migrated");if(localStorage.getItem(marker))return;const maps=[[KEY,ukey("price")],[estimateKey,ukey("estimate")],["murad_orders",ukey("orders")],["murad_order_form",ukey("order_form")]];for(const [oldk,newk] of maps){if(localStorage.getItem(newk)==null&&localStorage.getItem(oldk)!=null)localStorage.setItem(newk,localStorage.getItem(oldk));}localStorage.setItem(marker,"1")}
 let price=[],estimate=[],ordersList=[],orderForm={};
 let current="Главная", currentCat=null;
-function loadUserData(){price=loadPrice();ensureCustomSection();ensureShieldSections();ensureFullShieldPrices();ensureAVRPrices();ensureMasterContactorPrices();ensureUnifiedContactorPrices();estimate=readJSON(ukey("estimate"),[]);ordersList=readJSON(ukey("orders"),[]);orderForm=readJSON(ukey("order_form"),{})||{}}
+function loadUserData(){price=loadPrice();ensureCustomSection();ensureShieldSections();ensureInstallModulePrice();ensureFullShieldPrices();ensureAVRPrices();ensureMasterContactorPrices();ensureUnifiedContactorPrices();estimate=readJSON(ukey("estimate"),[]);ordersList=readJSON(ukey("orders"),[]);orderForm=readJSON(ukey("order_form"),{})||{}}
 function saveOrderForm(){
  const gv=(id,fallback="")=>{const e=document.getElementById(id);return e?e.value:fallback};
  orderForm={
@@ -1065,7 +1065,7 @@ async function enterApp(user){
 async function loadCloudState(){
  if(!authUser)return;const {data,error}=await sb.from("user_data").select("price,estimate,orders,order_form,updated_at").eq("user_id",authUser.id).single();if(error){console.error(error);return}
  const hasCloud=Array.isArray(data?.price)&&data.price.length>0;
- if(hasCloud){price=data.price;estimate=Array.isArray(data.estimate)?data.estimate:[];ordersList=Array.isArray(data.orders)?data.orders:[];orderForm=data.order_form&&typeof data.order_form==="object"?data.order_form:{};ensureCustomSection();ensureShieldSections();ensureFullShieldPrices();ensureAVRPrices();ensureMasterContactorPrices();ensureUnifiedContactorPrices();localStorage.setItem(ukey("price"),JSON.stringify(price));localStorage.setItem(ukey("estimate"),JSON.stringify(estimate));localStorage.setItem(ukey("orders"),JSON.stringify(ordersList));localStorage.setItem(ukey("order_form"),JSON.stringify(orderForm));}
+ if(hasCloud){price=data.price;estimate=Array.isArray(data.estimate)?data.estimate:[];ordersList=Array.isArray(data.orders)?data.orders:[];orderForm=data.order_form&&typeof data.order_form==="object"?data.order_form:{};ensureCustomSection();ensureShieldSections();ensureInstallModulePrice();ensureFullShieldPrices();ensureAVRPrices();ensureMasterContactorPrices();ensureUnifiedContactorPrices();localStorage.setItem(ukey("price"),JSON.stringify(price));localStorage.setItem(ukey("estimate"),JSON.stringify(estimate));localStorage.setItem(ukey("orders"),JSON.stringify(ordersList));localStorage.setItem(ukey("order_form"),JSON.stringify(orderForm));}
  else await saveCloudState(true);
 }
 function scheduleCloudSave(){if(!authUser)return;clearTimeout(cloudTimer);cloudTimer=setTimeout(()=>saveCloudState(false),700)}
@@ -1076,7 +1076,7 @@ async function saveCloudState(force=false){
 const navItems=[["🏠","Главная"],["📋","Прайс"],["🧮","Калькулятор"],["⚡","Щитовая"],["🧾","Сметы"]];
 document.getElementById("nav").innerHTML=navItems.map(x=>{const page=x[1]==="Сметы"?"Сметы и заказы":x[1];return `<button onclick="go('${page}')" id="n-${page}"><span class="nav-icon">${x[0]}</span><span class="nav-label">${x[1]}</span></button>`}).join("");
 
-const APP_VERSION="2026.10.02.52";
+const APP_VERSION="2026.10.02.53";
 const VERSION_URL="./version.json";
 let updateCheckBusy=false;
 let updateLatest="";
@@ -1216,6 +1216,20 @@ function ensureFullShieldPrices(){
   if(item[0]!==clean){item[0]=clean;changed=true;}
  }
  if(changed)savePrice();
+}
+const INSTALL_MODULE_PRICE_NAME="Установка щита · цена за 1 модуль";
+function ensureInstallModulePrice(){
+ const cat=price.find(p=>p.name==="Щитовая · Установка щитов");
+ if(!cat)return;
+ if(!cat.items.some(x=>x[0]===INSTALL_MODULE_PRICE_NAME)){
+  cat.items.push([INSTALL_MODULE_PRICE_NAME,"модуль",150]);
+  savePrice();
+ }
+}
+function getInstallModuleRate(){
+ const cat=price.find(p=>p.name==="Щитовая · Установка щитов");
+ const row=cat?.items.find(x=>x[0]===INSTALL_MODULE_PRICE_NAME);
+ return row?Number(row[2]):150;
 }
 function ensureShieldSections(){if(!Array.isArray(price))return;let changed=false;for(const cat of SHIELD_SECTIONS){if(!price.some(p=>p.name===cat.name)){price.push(JSON.parse(JSON.stringify(cat)));changed=true;}}if(changed)savePrice();}
 
@@ -1365,9 +1379,8 @@ function shieldInstallation(c,cat){
  <div class="card"><h3>Количество щитов и стоимость</h3>
  <label>Количество щитов<input id="installQty" type="number" inputmode="numeric" min="1" value="1" style="width:120px;font-size:17px;margin-left:10px" oninput="installSelected()"></label>
  <div id="installModuleDefaultRow" style="margin-bottom:14px">
- <label style="display:block">Базовая цена за модуль, ₽
- <input id="installDefaultModuleRate" type="number" min="0" step="any" inputmode="decimal" value="${getInstallModuleRate()}" style="width:100%;margin-top:8px" oninput="installDefaultRateChanged()"></label>
- <p class="muted" style="font-size:12px;margin-top:7px">Начальная ставка 150 ₽/модуль — пример, не расценка из присланного PDF. Можешь изменить её здесь.</p></div>
+ <span class="muted">Цена по прайсу за 1 модуль: </span><strong>${money(getInstallModuleRate())} ₽</strong>
+ <p class="muted" style="font-size:12px;margin-top:7px">Постоянная цена меняется только в разделе «Управление прайсом» → «Щитовая · Установка щитов» → «Установка щита · цена за 1 модуль».</p></div>
  <div id="installRateRow" style="margin-bottom:14px">
  <label style="display:block">Своя цена за 1 модуль, ₽
  <input id="installModuleRate" type="number" inputmode="decimal" min="0" step="any" placeholder="Например, 150" style="width:100%;margin-top:8px" oninput="installRateChanged('module')"></label>
@@ -1419,18 +1432,6 @@ function installItem(){
  const modules=Number(document.getElementById("installModules").value);
  return price[currentCat].items.find(x=>x[0].startsWith("Установка щита · "+type+" — "+modules+" модул"));
 }
-function getInstallModuleRate(){
- const saved=localStorage.getItem("my_electro_install_module_rate");
- const n=saved===null?150:Number(saved);
- return Number.isFinite(n)&&n>=0?n:150;
-}
-function installDefaultRateChanged(){
- const field=document.getElementById("installDefaultModuleRate");
- const n=Number(field.value);
- if(field.value.trim()!==""&&Number.isFinite(n)&&n>=0)
-  localStorage.setItem("my_electro_install_module_rate",String(n));
- installSelected();
-}
 function installRateChanged(){installSelected();}
 function installSelected(){
  const type=document.getElementById("installType").value;
@@ -1439,8 +1440,7 @@ function installSelected(){
  const x=(sized||avr)?null:installItem();
  const modules=Number(document.getElementById("installModules").value);
  const moduleInput=document.getElementById("installModuleRate").value.trim();
- const baseField=document.getElementById("installDefaultModuleRate");
- const base=baseField.value.trim()===""?getInstallModuleRate():Number(baseField.value);
+ const base=getInstallModuleRate();
  const rate=moduleInput===""?base:Number(moduleInput);
  const fixedInput=document.getElementById("installCustomPrice").value.trim();
  const unitPrice=(sized||avr)?(fixedInput===""?NaN:Number(fixedInput)):rate*modules;
@@ -1458,8 +1458,7 @@ function installAdd(){
  if(sized&&!size){alert("Укажи размер накладного щита.");document.getElementById("installSize").focus();return;}
  const fixedInput=document.getElementById("installCustomPrice").value.trim();
  const moduleInput=document.getElementById("installModuleRate").value.trim();
- const baseInput=document.getElementById("installDefaultModuleRate").value.trim();
- const rate=moduleInput!==""?Number(moduleInput):baseInput!==""?Number(baseInput):getInstallModuleRate();
+ const rate=moduleInput!==""?Number(moduleInput):getInstallModuleRate();
  if((sized||avr)&&(fixedInput===""||!Number.isFinite(Number(fixedInput))||Number(fixedInput)<0)){
   alert("Укажи корректную цену установки щита по размеру.");return;
  }
@@ -1999,7 +1998,7 @@ function removeSection(i){if(!confirm("Удалить раздел и все е�
 function addItemEditor(ci){const name=prompt("Название услуги:");if(!name||!name.trim())return;const unit=prompt("Единица измерения:","шт");if(!unit||!unit.trim())return;const val=prompt("Цена:","0");const n=Number(val);price[ci].items.push([name.trim(),unit.trim(),isNaN(n)?0:n]);savePrice();render()}
 function editItem(ci,ii,col,val){if(col===2)price[ci].items[ii][col]=Number(val)||0;else price[ci].items[ii][col]=val;savePrice()}
 function removeItem(ci,ii){if(!confirm("Удалить эту услугу?"))return;price[ci].items.splice(ii,1);savePrice();render()}
-function resetPrice(){if(!confirm("Вернуть исходный прайс? Все внесённые вручную изменения будут удалены."))return;price=JSON.parse(JSON.stringify(initialPrice));price.push({name:CUSTOM_SECTION,items:[]});ensureShieldSections();ensureFullShieldPrices();ensureMasterContactorPrices();ensureUnifiedContactorPrices();savePrice();render()}
+function resetPrice(){if(!confirm("Вернуть исходный прайс? Все внесённые вручную изменения будут удалены."))return;price=JSON.parse(JSON.stringify(initialPrice));price.push({name:CUSTOM_SECTION,items:[]});ensureShieldSections();ensureInstallModulePrice();ensureFullShieldPrices();ensureMasterContactorPrices();ensureUnifiedContactorPrices();savePrice();render()}
 function money(n){return Number(n||0).toLocaleString("ru-RU")}
 function esc(s){return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
 function attr(s){return esc(s)}
