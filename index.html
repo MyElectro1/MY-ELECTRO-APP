@@ -997,8 +997,7 @@ function saveOrderForm(){
    phone:gv("estimatePhone",orderForm.phone||""),
    address:gv("estimateAddress",orderForm.address||""),
    date:gv("estimateDate",orderForm.date||today()),
-   comment:orderForm.comment||"",
-   discount:gv("estimateDiscount",orderForm.discount||"0")
+   comment:orderForm.comment||"",   discount:gv("estimateDiscount",orderForm.discount||"0")
  };
  localStorage.setItem(ukey("order_form"),JSON.stringify(orderForm));scheduleCloudSave();
 }
@@ -1053,7 +1052,7 @@ function updateUserBadge(){
   });
  });
 }
-function openAccount(){if(!authUser){alert("Тестовый режим без аккаунта. Изменения сохраняются только в этом браузере и не передаются в облако.");return;}document.getElementById("accountName").value=currentUser||"";document.getElementById("accountEmail").value=authUser.email||"";document.getElementById("accountElectroId").value=electroId||"";document.getElementById("accountIdText").textContent=electroId||"MY ELECTRO";document.getElementById("accountMessage").textContent="";document.getElementById("accountModal").style.display="flex"}
+function openAccount(){if(!authUser){alert("Войди в аккаунт MY ELECTRO, чтобы открыть настройки.");return;}document.getElementById("accountName").value=currentUser||"";document.getElementById("accountEmail").value=authUser.email||"";document.getElementById("accountElectroId").value=electroId||"";document.getElementById("accountIdText").textContent=electroId||"MY ELECTRO";document.getElementById("accountMessage").textContent="";document.getElementById("accountModal").style.display="flex"}
 function closeAccount(){document.getElementById("accountModal").style.display="none"}
 async function saveAccountChanges(){if(!authUser)return;const name=String(document.getElementById("accountName").value||"").trim();const msg=document.getElementById("accountMessage");if(name.length<2){msg.textContent="Введите имя — минимум 2 символа";msg.style.color="#ef4444";return}msg.textContent="Сохраняем…";msg.style.color="#aab2b9";const {error}=await sb.from("profiles").update({name,updated_at:new Date().toISOString()}).eq("id",authUser.id);if(error){msg.textContent="Не удалось сохранить: "+error.message;msg.style.color="#ef4444";return}await sb.auth.updateUser({data:{name}});currentUser=name;localStorage.setItem(APP_USER_KEY,currentUser);updateUserBadge();msg.textContent="Изменения сохранены";msg.style.color="#22c55e";setTimeout(closeAccount,700)}
 async function enterApp(user){
@@ -1066,7 +1065,7 @@ async function loadCloudState(){
  if(!authUser)return;const {data,error}=await sb.from("user_data").select("price,estimate,orders,order_form,updated_at").eq("user_id",authUser.id).single();if(error){console.error(error);return}
  const hasCloud=Array.isArray(data?.price)&&data.price.length>0;
  if(hasCloud){price=data.price;estimate=Array.isArray(data.estimate)?data.estimate:[];ordersList=Array.isArray(data.orders)?data.orders:[];orderForm=data.order_form&&typeof data.order_form==="object"?data.order_form:{};ensureCustomSection();ensureShieldSections();ensureInstallModulePrice();ensureFullShieldPrices();ensureAVRPrices();ensureMasterContactorPrices();ensureUnifiedContactorPrices();localStorage.setItem(ukey("price"),JSON.stringify(price));localStorage.setItem(ukey("estimate"),JSON.stringify(estimate));localStorage.setItem(ukey("orders"),JSON.stringify(ordersList));localStorage.setItem(ukey("order_form"),JSON.stringify(orderForm));}
- else { console.warn("Cloud record unavailable; skipping automatic overwrite."); }
+ else { console.warn("Cloud data absent or unavailable; skipping automatic overwrite."); }
 }
 function scheduleCloudSave(){if(!authUser)return;clearTimeout(cloudTimer);cloudTimer=setTimeout(()=>saveCloudState(false),700)}
 async function saveCloudState(force=false){
@@ -1076,7 +1075,7 @@ async function saveCloudState(force=false){
 const navItems=[["🏠","Главная"],["📋","Прайс"],["🧮","Калькулятор"],["⚡","Щитовая"],["🧾","Сметы"]];
 document.getElementById("nav").innerHTML=navItems.map(x=>{const page=x[1]==="Сметы"?"Сметы и заказы":x[1];return `<button onclick="go('${page}')" id="n-${page}"><span class="nav-icon">${x[0]}</span><span class="nav-label">${x[1]}</span></button>`}).join("");
 
-const APP_VERSION="2026.10.02.58";
+const APP_VERSION="2026.10.02.59";
 const VERSION_URL="./version.json";
 let updateCheckBusy=false;
 let updateLatest="";
@@ -1097,8 +1096,7 @@ function showUpdateBanner(latestVersion){
  b.style.display="flex";
 }
 
-async function fetchTextNoCache(url){
- const sep=url.includes("?")?"&":"?";
+async function fetchTextNoCache(url){ const sep=url.includes("?")?"&":"?";
  const r=await fetch(url+sep+"v="+Date.now(),{
    cache:"no-store",
    headers:{"Cache-Control":"no-cache, no-store, must-revalidate","Pragma":"no-cache","Expires":"0"}
@@ -1301,9 +1299,9 @@ function ensureBackButton(){
 
 function render(){document.getElementById("title").textContent=current;const c=document.getElementById("content");try{
  if(current==="Главная")return home(c); if(current==="Прайс")return pricePage(c); if(current==="Калькулятор")return calc(c); if(current==="Щитовая")return (currentCat===null||currentCat===-2)?shieldLanding(c):items(c);
- if(current==="Сметы и заказы")return orders(c); if(current==="Архив заказов")return archive(c);
+ if(current==="Сметы и заказы")return orders(c); if(current==="Архив заказов")return archive(c); if(current==="Мои объекты")return objectsPage(c);
  if(current==="Управление прайсом")return editor(c);
-}finally{ensureBackButton();}
+}finally{ensureBackButton();if(activeObjectId&&['Прайс','Калькулятор','Щитовая'].includes(current)){const el=document.getElementById('content');const b=document.createElement('div');b.className='card no-print';b.style.marginBottom='12px';b.innerHTML=`<b>📁 ${esc(objectById()?.name||'Объект')}</b><div class="actions" style="margin-top:8px"><button class="btn" onclick="objectSaveCurrent()">💾 Сохранить смету в объект</button><button class="btn secondary" onclick="go('Мои объекты')">Открыть объект</button></div>`;el.prepend(b)}}
 }
 function home(c){
  c.innerHTML=`
@@ -1322,9 +1320,9 @@ function home(c){
      <div><span>03</span><b>Получи смету</b></div>
    </div>
 
-   <button class="home-start" onclick="go('Прайс')">⚡ Начать расчёт</button>
+   <div style="display:grid;gap:12px;max-width:440px;margin:20px auto"><button class="home-start" onclick="newQuickEstimate()">🧮 Рассчитать новую смету</button><button class="home-start" style="background:#30353a;color:#fff" onclick="newObjectPrompt()">📁 Создать новый объект</button><button class="btn secondary" onclick="go('Мои объекты')">📂 Мои объекты</button></div>
    <div class="home-note">Точно · Быстро · Удобно</div>
-   <button class="home-repeat no-print" onclick="go('Архив заказов')">↻ Вернуться к прошлым расчётам</button>
+   <button class="home-repeat no-print" onclick="go('Архив заказов')">🗂️ Архив смет и объектов</button>
  </div>`;
 }
 function estimateLiveTotal(){return estimate.reduce((s,x)=>s+Number(x.qty||0)*Number(x.price||0),0)}
@@ -1759,7 +1757,7 @@ function orders(c){
   const d=calcDiscount(sub);
   const f={client:orderForm.client||"",master:orderForm.master||currentUser||"",phone:orderForm.phone||"",address:orderForm.address||"",date:orderForm.date||today(),comment:orderForm.comment||"",discount:orderForm.discount||"0"};
   orderForm=f; localStorage.setItem("murad_order_form",JSON.stringify(f));
-  c.innerHTML=`<div class="card print-sheet">
+  c.innerHTML=`${activeObjectId?`<div class="card no-print"><b>📁 Объект: ${esc(objectById()?.name||'')}</b><div class="actions" style="margin-top:10px"><button class="btn" onclick="objectSaveCurrent()">💾 Сохранить смету в объект</button><button class="btn secondary" onclick="go('Мои объекты')">Открыть объект</button></div></div>`:''}<div class="card print-sheet">
   <div class="estimate-client-edit no-print">
     <h3>👤 Данные клиента в смете</h3>
     <div class="estimate-client-fields">
@@ -1916,7 +1914,63 @@ function printOrder(ev){
  }
  return false;
 }
-function archive(c){c.innerHTML=`<div class="card"><h3>🗂️ Архив заказов</h3>${ordersList.length?ordersList.map((o,i)=>`<div class="archive-item"><div><b>${esc(o.client||"Без имени")}</b><div class="muted">${esc(o.date)} · ${esc(o.phone||"Телефон не указан")}</div><div class="muted">${esc(o.address||"Адрес не указан")}</div></div><div class="archive-right"><b>${money(o.total)} ₽</b><button class="btn secondary no-print" onclick="viewOrder(${i})">✏️ Редактировать</button><button class="btn danger no-print" onclick="deleteOrder(${i})">🗑️ Удалить</button></div></div>`).join(""):`<p class="muted">Архив пока пуст. Сохранённые заказы появятся здесь.</p>`}</div>`}
+
+// V54 preview: project records are browser-local; cloud sync of project photos is not enabled.
+let activeObjectId=null, activeObjectEstimateId=null;
+let objectMemoryFallback=null;
+function objectsStorageKey(){return 'my_electro_objects_account_'+(authUser?.id||'offline')+'_v1'}
+function loadObjects(){
+ if(objectMemoryFallback!==null)return objectMemoryFallback;
+ const rows=readJSON(objectsStorageKey(),[]);
+ return Array.isArray(rows)?rows:[];
+}
+function storeObjects(items){
+ try{localStorage.setItem(objectsStorageKey(),JSON.stringify(items));objectMemoryFallback=null;return true}
+ catch(e){objectMemoryFallback=items;alert('Браузер ограничил постоянное сохранение. Объект создан временно; для надёжного сохранения открой приложение в обычном браузере.');return true}
+}
+function objectById(){return loadObjects().find(x=>x.id===activeObjectId)}
+function newQuickEstimate(){activeObjectId=null;activeObjectEstimateId=null;resetForNextOrder();go('Прайс')}
+function newObjectPrompt(){
+ const old=document.getElementById("objectCreateOverlay");if(old)old.remove();
+ const overlay=document.createElement("div");overlay.id="objectCreateOverlay";
+ overlay.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.83);z-index:99999;overflow-y:auto;padding:22px 12px;display:flex;align-items:flex-start;justify-content:center";
+ overlay.innerHTML=`<form id="objectCreateForm" class="card" style="width:min(100%,480px);margin:5vh auto;background:#202429;border:1px solid #5b6064">
+ <h2 style="margin:0 0 18px">📁 Новый объект</h2>
+ <label style="display:block;margin:12px 0">Название объекта *<input name="name" required maxlength="100" placeholder="Квартира Антон" style="width:100%;margin-top:7px"></label>
+ <label style="display:block;margin:12px 0">Имя заказчика<input name="client" maxlength="100" placeholder="Антон" style="width:100%;margin-top:7px"></label>
+ <label style="display:block;margin:12px 0">Телефон<input name="phone" type="tel" maxlength="40" placeholder="+7..." style="width:100%;margin-top:7px"></label>
+ <label style="display:block;margin:12px 0">Адрес<input name="address" maxlength="180" placeholder="Адрес объекта" style="width:100%;margin-top:7px"></label>
+ <p id="objectCreateError" style="color:#ff9999;display:none" role="alert"></p>
+ <div class="actions" style="margin-top:20px"><button type="submit" class="btn">Создать объект</button><button type="button" class="btn secondary" onclick="document.getElementById('objectCreateOverlay').remove()">Отмена</button></div>
+ </form>`;
+ document.body.appendChild(overlay);
+ const form=document.getElementById("objectCreateForm");
+ form.addEventListener("submit",function(ev){
+  ev.preventDefault();
+  const error=document.getElementById("objectCreateError");
+  try{
+   const get=n=>String(form.querySelector('[name="'+n+'"]').value||"").trim();
+   const name=get("name");
+   if(!name){error.textContent="Введи название объекта.";error.style.display="block";return}
+   const all=loadObjects();
+   const o={id:Date.now(),name,client:get("client"),phone:get("phone"),address:get("address"),estimates:[],photos:[],created:today()};
+   all.unshift(o);
+   if(storeObjects(all)){activeObjectId=o.id;activeObjectEstimateId=null;overlay.remove();go("Мои объекты")}
+  }catch(e){error.textContent="Не удалось создать объект: "+(e?.message||String(e));error.style.display="block";console.error(e)}
+ });
+ form.querySelector('[name="name"]').focus();
+}
+function objectSaveCurrent(){if(!activeObjectId)return;const all=loadObjects(),o=all.find(x=>x.id===activeObjectId);if(!o)return;const old=o.estimates.find(x=>x.id===activeObjectEstimateId);const title=prompt('Название сметы',old?.title||'Электромонтажные работы');if(!title)return;saveOrderForm();const entry={id:old?.id||Date.now(),title,items:JSON.parse(JSON.stringify(estimate)),form:{...orderForm},saved:new Date().toLocaleString('ru-RU')};if(old)Object.assign(old,entry);else o.estimates.push(entry);if(storeObjects(all)){activeObjectEstimateId=entry.id;alert('Смета сохранена внутри объекта');go('Мои объекты')}}
+function objectNewEstimate(){const o=objectById();if(!o)return;activeObjectEstimateId=null;estimate=[];orderForm={client:o.client||'',master:currentUser||'',phone:o.phone||'',address:o.address||'',date:today(),comment:'',discount:'0'};saveEstimate();localStorage.setItem(ukey('order_form'),JSON.stringify(orderForm));go('Прайс')}
+function objectOpenEstimate(id){const o=objectById(),entry=o?.estimates.find(x=>x.id===id);if(!entry)return;activeObjectEstimateId=id;estimate=JSON.parse(JSON.stringify(entry.items));orderForm={...entry.form};saveEstimate();localStorage.setItem(ukey('order_form'),JSON.stringify(orderForm));go('Сметы и заказы')}
+function objectSelect(id){activeObjectId=id;activeObjectEstimateId=null;render()}
+function objectPhotoAdd(input){const files=Array.from(input.files||[]),id=activeObjectId;if(!files.length)return;let pending=files.length;files.forEach(file=>{if(file.size>750000){alert('Для предварительной версии выбери фотографию меньше 750 КБ: '+file.name);if(!--pending)render();return}const reader=new FileReader();reader.onload=()=>{const all=loadObjects(),o=all.find(x=>x.id===id);if(o){o.photos.push({id:Date.now()+Math.random(),name:file.name,data:reader.result});storeObjects(all)}if(!--pending)render()};reader.onerror=()=>{if(!--pending)render()};reader.readAsDataURL(file)})}
+function objectPhotoRemove(id){if(!confirm('Удалить фотографию?'))return;const all=loadObjects(),o=all.find(x=>x.id===activeObjectId);o.photos=o.photos.filter(x=>x.id!==id);storeObjects(all);render()}
+function objectDeleteEstimate(id){if(!confirm('Удалить эту смету из объекта?'))return;const all=loadObjects(),o=all.find(x=>x.id===activeObjectId);o.estimates=o.estimates.filter(x=>x.id!==id);storeObjects(all);render()}
+function objectsPage(c){const all=loadObjects(),o=objectById();if(!o){c.innerHTML=`<div class="card"><h2>📁 Мои объекты</h2><button class="btn" onclick="newObjectPrompt()">＋ Создать новый объект</button><div style="margin-top:18px">${all.length?all.map(x=>`<div class="archive-item"><div><b>${esc(x.name)}</b><div class="muted">${esc(x.client||'Без имени')} · ${x.estimates.length} смет · ${x.photos.length} фото</div></div><button class="btn secondary" onclick="objectSelect(${x.id})">Открыть →</button></div>`).join(''):'<p class="muted">Пока нет объектов.</p>'}</div></div>`;return}const sum=o.estimates.reduce((total,e)=>total+e.items.reduce((v,i)=>v+Number(i.price||0)*Number(i.qty||1),0)*(1-Number(e.form.discount||0)/100),0);c.innerHTML=`<div class="card"><button class="btn secondary" onclick="activeObjectId=null;render()">← Все объекты</button><h2>📁 ${esc(o.name)}</h2><div class="muted">Заказчик: ${esc(o.client||'—')} · ${esc(o.phone||'—')}</div><div class="muted">Адрес: ${esc(o.address||'—')}</div><h3>Общая сумма: ${money(sum)} ₽</h3><hr><h3>Сметы объекта</h3><div class="actions"><button class="btn" onclick="objectNewEstimate()">＋ Новая смета</button>${estimate.length?'<button class="btn secondary" onclick="objectSaveCurrent()">💾 Сохранить текущую смету в объект</button>':''}</div>${o.estimates.map(e=>`<div class="archive-item"><div><b>${esc(e.title)}</b><div class="muted">${esc(e.saved)}</div></div><div class="actions"><button class="btn secondary" onclick="objectOpenEstimate(${e.id})">✏️ Открыть</button><button class="btn danger" onclick="objectDeleteEstimate(${e.id})">Удалить</button></div></div>`).join('')||'<p class="muted">Добавь первую смету.</p>'}<hr><h3>Фотографии объекта</h3><label class="btn secondary" style="display:inline-block;cursor:pointer">＋ Добавить фото<input type="file" accept="image/*" multiple onchange="objectPhotoAdd(this)" style="display:none"></label><p class="muted">В этой предварительной версии фотографии хранятся только в данном браузере. Размер каждого файла — до 750 КБ. Для надёжного хранения потребуется облачная версия.</p><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px">${o.photos.map(p=>`<div><img src="${p.data}" alt="${esc(p.name)}" style="width:100%;height:130px;object-fit:cover;border-radius:9px"><button class="btn danger" onclick="objectPhotoRemove(${p.id})">Удалить</button></div>`).join('')}</div></div>`}
+function archive(c){c.innerHTML=`<div class="card"><h2>🗂️ Архив</h2><div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(210px,1fr));margin:18px 0"><button class="btn secondary" onclick="showPlainArchive()">🧾 Обычные сметы (${ordersList.length})</button><button class="btn secondary" onclick="go('Мои объекты')">📁 Мои объекты (${loadObjects().length})</button></div><div id="plainArchive"></div></div>`;showPlainArchive()}
+function showPlainArchive(){const el=document.getElementById('plainArchive');if(!el)return;el.innerHTML=`<h3>Обычные сметы</h3>${ordersList.length?ordersList.map((o,i)=>`<div class="archive-item"><div><b>${esc(o.client||"Без имени")}</b><div class="muted">${esc(o.date)} · ${esc(o.phone||"Телефон не указан")}</div><div class="muted">${esc(o.address||"Адрес не указан")}</div></div><div class="archive-right"><b>${money(o.total)} ₽</b><button class="btn secondary no-print" onclick="viewOrder(${i})">✏️ Редактировать</button><button class="btn danger no-print" onclick="deleteOrder(${i})">🗑️ Удалить</button></div></div>`).join(""):`<p class="muted">Обычных смет пока нет.</p>`}`}
+
 function viewOrder(i){
  const o=ordersList[i];
  editingOrderId=o.id;
@@ -2008,10 +2062,11 @@ async function bootApp(){
  showAuthMode("login");
  authMsg("Проверяем сохранённый вход…",true);
  try{
+  if(typeof supabase==="undefined"){authMsg("Не загрузилась библиотека входа. Проверь интернет и обнови страницу.");return}
   const {data,error}=await sb.auth.getSession();
   if(error)throw error;
   if(data?.session?.user){await enterApp(data.session.user);return}
-  authMsg("Войди в свой существующий аккаунт MY ELECTRO.",true);
+  authMsg("Войди в существующий аккаунт MY ELECTRO.",true);
  }catch(e){console.error("Session restore:",e);authMsg("Не удалось проверить вход. Проверь интернет и войди с прежними данными.")}
 }
 bootApp();
